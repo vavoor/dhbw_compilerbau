@@ -58,6 +58,7 @@ static void open_grammar(const char* filename)
     fatal_error("Cannot open input file");
   }
   next();
+  skip_spaces();
 }
 
 static void close_grammar(void)
