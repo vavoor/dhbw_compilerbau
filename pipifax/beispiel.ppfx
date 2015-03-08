@@ -1,0 +1,41 @@
+# Globale Variablen
+var a int
+var b string
+var c[15] float
+
+# Hauptprogramm
+func main() {
+  # Local variables
+  var error int
+  var msg string
+  var m float
+  var d[3] float
+
+  d[0] = 5   d[1] = 3.14   d[2] = -1  # Bad style!
+  msg = "Alles klar!"
+  m = max(3,d,error)
+  if error {
+    # int==0 is false, int!=0 is true
+    msg = "Fehler ist aufgetreten"
+  }
+}
+
+# As parameters, unspecified arrays and references are allowed
+func max(len int, data[] float, err* int) float {
+  var m float
+
+  if len > 0 {
+    err = 0
+    m = data[0]
+    var i int  # Variable declaration can be anywhere
+    i = 1
+    while i<len {
+      if data[i]>m {
+        m = data[i]
+      }
+    }
+  } else {
+    err = 1  # No special syntax for use of references
+  }
+  max = m  # Return value: assignment to function name
+}
