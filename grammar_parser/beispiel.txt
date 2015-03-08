@@ -1,0 +1,9 @@
+# This is a grammar for a simple language
+
+Program :: Variable | Function .
+Variable :: Type Ident ( ",", Ident)* ";" .
+Type :: INT | STRING .
+Function :: "func" Ident "(" (ParameterList)? ")" (":" Type)? Body .
+ParameterList :: Parameter ("," Parameter)* .
+Parameter :: Type Ident .
+Ident :: ( LETTER )+ .

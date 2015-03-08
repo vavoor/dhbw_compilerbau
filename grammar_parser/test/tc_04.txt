@@ -1,0 +1,3 @@
+# Eine Regel mit Alternative
+
+Links :: Rechts_1 | Recht2_2 .

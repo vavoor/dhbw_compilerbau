@@ -1,0 +1,6 @@
+# Mehrere Regeln
+
+Links_1 :: Rechts11 Rechts12 Rechts13.
+Links_2::Rechts21 Rechts22.
+
+Links_3   :: Rechts31 | Rechts32.

@@ -1,0 +1,4 @@
+# Eine Regel mit Kommentar und Leerzeichen
+
+Links ::  Rechts  .
+

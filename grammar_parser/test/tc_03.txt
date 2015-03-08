@@ -1,0 +1,3 @@
+# Eine Regel - Konkatenation
+
+Linke :: Rechts1 RECHTS2 .

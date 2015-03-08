@@ -1,0 +1,6 @@
+#Mit Literalen
+
+A :: "a" .
+FUNC :: "function" .
+
+mit_space :: "mit space" .
