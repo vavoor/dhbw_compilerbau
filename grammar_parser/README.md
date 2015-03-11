@@ -8,3 +8,4 @@ parser should be implemented using a recursive descent approach.
 - beispiel.txt : An example to illustrate the structure of a grammar file
 - C : A directory containing C code to get started with
 - test : A directory with a number of test cases
+- muster : A directory containing one possible solution as an example
