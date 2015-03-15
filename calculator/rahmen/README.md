@@ -1,0 +1,1 @@
+Um loszulegen ...- Benutzen Sie scanner.l als Startpunkt fŸr den Scanner- Benutzen Sie parser.y als Startpunkt fŸr den Parser
