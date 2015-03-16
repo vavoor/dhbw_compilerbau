@@ -1,0 +1,17 @@
+# initial state is state unlocked
+initial state unlocked:
+  control light_off         # A state can control something
+  control door_unlocked
+  on enter goto locked      # On certain events, a state transition can happen
+
+
+state locked:
+  control light_on
+  control door_locked
+  on exit goto unlocked
+  on emergency_button goto emergency
+
+state emergency:
+  control alarm_bell
+
+
