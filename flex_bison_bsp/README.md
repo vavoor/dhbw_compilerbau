@@ -1,6 +1,6 @@
 Dieses Beispiel soll die Benutzung von flex und bison illustrieren.
 
-Als Beispiel dient eine Sprache, die endliche Automaten z.B. fŸr die Steuerung
+Als Beispiel dient eine Sprache, die endliche Automaten z.B. für die Steuerung
 von Anlagen definiert. Die Sprache sieht so aus:
 
 
@@ -15,14 +15,19 @@ state locked:
   control light_on
   control door_locked
   on exit goto unlocked
+  on emergency_button goto emergency
+
+state emergency:
+  control alarm_bell;
+###############################################################
 
 
-SchlŸsselwšrter sind: inital, state, control, on, goto.
+Schlüsselwörter sind: inital, state, control, on, goto.
 
-Auf das SchlŸsselwort state folgt der Name des Zustands.
-Auf das SchlŸsselwort on folgt der Name eines Ereignisses.
-Auf das SchlŸsselwort goto folgt der Name des Zustands, in den beim Eintritt
+Auf das Schlüsselwort state folgt der Name des Zustands.
+Auf das Schlüsselwort on folgt der Name eines Ereignisses.
+Auf das Schlüsselwort goto folgt der Name des Zustands, in den beim Eintritt
 des Ereignisses gewechselt wird.
 
 Zustandsnamen und Ereignisnamen bestehen aus Buchstaben, Zahlen und Underscores.
-SchlŸsselwšrter dŸrfen nicht als Zustands- oder Ereignisnamen benutzt werden.
+Schlüsselwörter dŸrfen nicht als Zustands- oder Ereignisnamen benutzt werden.

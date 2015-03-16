@@ -16,10 +16,11 @@ void yyerror(const char* msg);
   const char* s;
   int i;
   State state;
+  State* states;
   Transition event;
+  Transition* events;
   Control control;
   Control* controls;
-  Transition* transitions;
 }
 
 %token T_INITIAL T_STATE T_ON T_GOTO T_CONTROL ':'
@@ -27,10 +28,11 @@ void yyerror(const char* msg);
 
 %type<i> opt_initial
 %type<state> state
+%type<states> states
 %type<event> event
+%type<events> events
 %type<control> control
 %type<controls> controls
-%type<transitions> events
 
 %start state_machine
 
@@ -38,11 +40,14 @@ void yyerror(const char* msg);
 
 state_machine
   : states
+    { the_state_machine = $1; }
   ;
 
 states
   : states state
+    { $$ = $1; appendToList($2,(List)$1); }
   | state
+    { $$ = (State*) makeList(); appendToList($1,(List)$$); }
   ;
 
 state
@@ -59,9 +64,9 @@ opt_initial
 
 controls
   : controls control
-    { $$ = $1; /* to do */ }
+    { $$ = $1; appendToList($2,(List)$$); }
   | /* empty */
-    { $$ = NULL; }
+    { $$ = (Control*) makeList(); }
   ;
 
 control
@@ -71,9 +76,9 @@ control
 
 events
   : events event
-    { $$ = $1; /* to do */}
+    { $$ = $1; appendToList($2,(List)$$); }
   | /* empty */
-    { $$ = NULL; }
+    { $$ = (Transition*) makeList(); }
   ;
 
 event
@@ -91,7 +96,10 @@ void yyerror(const char* msg)
 
 int main()
 {
-  yyparse();
+  if (yyparse()==0) {
+    generate_all();
+  }
+
   return 0;
 }
 
