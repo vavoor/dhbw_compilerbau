@@ -4,7 +4,7 @@
 #include "msg.h"
 
 static int debug_flag = 0;
-static errors = 0;
+static int errors = 0;
 
 
 void setDebugFlag(void)
@@ -60,4 +60,3 @@ int isDebug(void)
 {
   return debug_flag;
 }
-
