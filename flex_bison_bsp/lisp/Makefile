@@ -1,5 +1,5 @@
 PRG=lisp
-OBJ=parser.tab.o lex.yy.o
+OBJ=parser.tab.o lex.yy.o list.o
 
 CC=gcc
 CFLAGS=-g -I.
@@ -28,6 +28,7 @@ lex.yy.c lex.yy.h: scanner.l
 parser.tab.c parser.tab.h: parser.y
 	bison $(YFLAGS) parser.y
 
-parser.tab.o: parser.tab.c lex.yy.h
-
+###
+parser.tab.o: parser.tab.c lex.yy.h list.h
 lex.yy.o: lex.yy.c parser.tab.h
+list.o: list.c list.h
