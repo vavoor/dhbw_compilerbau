@@ -1,4 +1,7 @@
 %{
+#include <string.h>
+#include <stdlib.h>
+
 #include "list.h"
 #include "parser.tab.h"
 %}
@@ -10,8 +13,8 @@ S   [A-Za-z!$%&/=?+*#\-_.:<>]
 
 %%
 
-{S}+    { return SYMBOL; }
-{D}+    { return NUMBER; }
+{S}+    { yylval.string = strdup(yytext); return SYMBOL; }
+{D}+    { yylval.number = atoi(yytext); return NUMBER; }
 
 "("     { return yytext[0]; }
 ")"     { return yytext[0]; }
