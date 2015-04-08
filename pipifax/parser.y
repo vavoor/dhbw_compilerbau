@@ -42,7 +42,7 @@ global_var_decl
   ;
 
 func_def
-  : T_FUNC indent '(' opt_param_list ')' opt_type_specifier block
+  : T_FUNC ident '(' opt_param_list ')' opt_type_specifier block
   ;
 
 opt_param_list
@@ -56,7 +56,7 @@ param_list
   ;
 
 param_decl
-  : indent param_type_specifier
+  : ident param_type_specifier
   ;
 
 param_type_specifier
@@ -88,7 +88,7 @@ statement
   : assignment
   | if_stmt
   | while_stmt
-  | func_call
+  | func_call_stmt
   ;
 
 assignment
@@ -98,6 +98,87 @@ assignment
 if_stmt
   : T_IF expr block
   | T_IF expr block T_ELSE block
+  ;
+
+while_stmt
+  : T_WHILE expr block
+  ;
+
+func_call_stmt
+  : func_call
+  ;
+
+opt_arg_list
+  : arg_list
+  | /* empty */
+  ;
+
+arg_list
+  : arg_list ',' expr
+  | expr
+  ;
+
+expr
+  : or_expr
+  ;
+
+or_expr
+  : and_expr T_OR or_expr
+  | and_expr
+  ;
+
+and_expr
+  : comp_expr T_AND and_expr
+  | comp_expr
+  ;
+
+comp_expr
+  : add_expr '<' add_expr
+  | add_expr T_LE add_expr
+  | add_expr T_EQ add_expr
+  | add_expr T_NE add_expr
+  | add_expr T_GE add_expr
+  | add_expr '>' add_expr
+  | add_expr
+  ;
+
+add_expr
+  : add_expr '+' mult_expr
+  | add_expr '-' mult_expr
+  | mult_expr
+  ;
+
+mult_expr
+  : mult_expr '*' unary_expr
+  | mult_expr '/' unary_expr
+  | unary_expr
+  ;
+
+unary_expr
+  : '-' unary_expr
+  | '!' unary_expr
+  | func_call
+  | var_access
+  | literal
+  ;
+
+func_call
+  : ident '(' opt_arg_list ')' /* TODO : what about f()[5] ?*/
+  ;
+
+var_access
+  : lvalue
+  ;
+
+lvalue
+  : lvalue '[' expr ']'
+  | ident /* TODO : f()[7] = 4? */
+  ;
+
+literal
+  : T_INT_VALUE
+  | T_FLOAT_VALUE
+  | T_STRING_VALUE
   ;
 
 type_specifier
