@@ -1,0 +1,4 @@
+lex.yy.*
+parser.output
+parser.tab.*
+ppfx
