@@ -24,6 +24,7 @@ S   "\""("\\".|[^\\"])*"\""
 "var"         { p(); return T_VAR; }
 "func"        { p(); return T_FUNC; }
 "if"          { p(); return T_IF; }
+"else"        { p(); return T_ELSE; }
 "while"       { p(); return T_WHILE; }
 "int"         { p(); return T_INT; }
 "float"       { p(); return T_FLOAT; }
