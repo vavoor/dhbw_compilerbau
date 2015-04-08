@@ -17,8 +17,11 @@ void yyerror(const char* msg);
   double d;
 }
 
+%token '(' ')' '[' ']' '{' '}'
+%token '+' '-' '*' '/' '=' '<' '>' '!' ','
 %token T_VAR T_FUNC T_IF T_WHILE
 %token T_INT T_FLOAT T_STRING
+%token T_LE T_GE T_EQ T_NE T_AND T_OR
 %token<s> T_IDENT
 %token<i> T_INT_VALUE
 %token<d> T_FLOAT_VALUE

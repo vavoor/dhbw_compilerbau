@@ -14,8 +14,8 @@ int main(int argc, const char* argv[])
     yyin = fopen(argv[1],"r");
     if (yyin==NULL) {
       fatal(0,"Cannot open input file %s",argv[1]);
-      yyparse();
     }
+    yyparse();
   }
   return 0;
 }
