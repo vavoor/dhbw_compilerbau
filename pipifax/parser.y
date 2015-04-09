@@ -62,7 +62,7 @@ param_decl
 param_type_specifier
   : type_specifier
   | '*' type_specifier
-  | '[' ']' type_specifier /* TODO : is x[][] allowed? */
+  | '*' '[' ']' type_specifier
   ;
 
 opt_type_specifier
@@ -163,7 +163,7 @@ unary_expr
   ;
 
 func_call
-  : ident '(' opt_arg_list ')' /* TODO : what about f()[5] ?*/
+  : ident '(' opt_arg_list ')' /* TODO : what about f()[5], i.e. is a function call an lvalue ?*/
   ;
 
 var_access
