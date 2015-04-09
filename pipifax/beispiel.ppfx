@@ -21,7 +21,7 @@ func main() {
 }
 
 # As parameters, unspecified arrays and references are allowed
-func max(len int, data[] float, err* int) float {
+func max(len int, data*[] float, err* int) float {
   var m float
 
   if len > 0 {

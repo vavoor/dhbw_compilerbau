@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdarg.h>
+#include <stdlib.h>
 
 void fatal(int lineno, const char* msg, ...)
 {
@@ -11,4 +12,5 @@ void fatal(int lineno, const char* msg, ...)
   vfprintf(stderr,msg,args);
   fprintf(stderr,"\n");
   va_end(args);
+  exit(1);
 }
