@@ -1,6 +1,8 @@
 %{
 #include <string.h>
 #include <stdlib.h>
+
+#include "ast.hpp"
 #include "parser.tab.h"
 
 static char* unescape(const char* s);

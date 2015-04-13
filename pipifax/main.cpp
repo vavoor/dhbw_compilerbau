@@ -2,9 +2,10 @@
 #include <string>
 using namespace std;
 
+#include "ast.hpp"
 #include "parser.tab.h"
 #include "lex.yy.h"
-#include "err.h"
+#include "err.hpp"
 
 int main(int argc, const char* argv[])
 {

@@ -6,8 +6,13 @@
 #include <map>
 using namespace std;
 
+class Expr;
+class SymbolTable;
+
 class Node
 {
+public:
+  virtual void resolve(SymbolTable* symtab);
 };
 
 class Type : public Node
@@ -41,12 +46,13 @@ public:
   {}
 };
 
-class UndimensionedArrayType : public Type
+/* x *[] int */
+class ArrayRefType : public Type
 {
 public:
   Type* m_base;
 
-  UndimensionedArrayType(Type* base)
+  ArrayRefType(Type* base)
   : m_base(base)
   {}
 };
@@ -64,10 +70,10 @@ public:
 class VarDeclaration : public Node
 {
 public:
-  string m_name;
+  string* m_name;
   Type* m_type;
 
-  VarDeclaration(string& name, Type* type)
+  VarDeclaration(string* name, Type* type)
   : m_name(name), m_type(type)
   {}
 
@@ -76,7 +82,7 @@ public:
 class GlobalVarDeclaration : public VarDeclaration
 {
 public:
-  GlobalVarDeclaration(string& name, Type* type)
+  GlobalVarDeclaration(string* name, Type* type)
   : VarDeclaration(name,type)
   {}
 };
@@ -84,7 +90,7 @@ public:
 class ParamDeclaration : public VarDeclaration
 {
 public:
-  ParamDeclaration(string& name, Type* type)
+  ParamDeclaration(string*name, Type* type)
   : VarDeclaration(name,type)
   {}
 };
@@ -92,7 +98,7 @@ public:
 class LocalVarDeclaration : public VarDeclaration
 {
 public:
-  LocalVarDeclaration(string& name, Type* type)
+  LocalVarDeclaration(string* name, Type* type)
   : VarDeclaration(name,type)
   {}
 };
@@ -105,42 +111,45 @@ class LValue : public Node
 class VarAccess : public LValue
 {
 public:
-  string m_name;
-  VarDeclaration* m_decl;
+  string* m_name;
+  
+  VarAccess(string* name)
+  : m_name(name)
+  {}
 };
 
 class ArrayAccess : public LValue
 {
 public:
   LValue* m_base;
-  Expression* m_index;
+  Expr* m_index;
 
-  ArrayAccess(LValue *base, Expression *expr)
+  ArrayAccess(LValue *base, Expr *expr)
   : m_base(base), m_index(expr)
   {}
 };
 
-class Expression : public Node
+class Expr : public Node
 {
 };
 
-class BinaryExpr : public Expression
+class BinaryExpr : public Expr
 {
 public:
-  Expression* m_left;
-  expression* m_right;
+  Expr* m_left;
+  Expr* m_right;
 
-  BinaryExpr(Expression* l, Expression* r)
+  BinaryExpr(Expr* l, Expr* r)
   : m_left(l), m_right(r)
   {}
 };
 
-class UnaryExpr : public Expression
+class UnaryExpr : public Expr
 {
 public:
-  Expression* m_child;
+  Expr* m_child;
 
-  UnaryExpr(Expression* child)
+  UnaryExpr(Expr* child)
   : m_child(child)
   {}
 };
@@ -148,7 +157,7 @@ public:
 class AndExpr : public BinaryExpr
 {
 public:
-  AndExpr(Expression* l, Expression* r)
+  AndExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -156,7 +165,7 @@ public:
 class OrExpr : public BinaryExpr
 {
 public:
-  OrExpr(Expression* l, Expression* r)
+  OrExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -164,7 +173,7 @@ public:
 class LessExpr : public BinaryExpr
 {
 public:
-  LessExpr(Expression* l, Expression* r)
+  LessExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -172,7 +181,7 @@ public:
 class LessEqualExpr : public BinaryExpr
 {
 public:
-  LessEqualExpr(Expression* l, Expression* r)
+  LessEqualExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -180,7 +189,7 @@ public:
 class GreaterExpr : public BinaryExpr
 {
 public:
-  GreaterExpr(Expression* l, Expression* r)
+  GreaterExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -188,7 +197,7 @@ public:
 class GreaterEqualExpr : public BinaryExpr
 {
 public:
-  GreaterEqualExpr(Expression* l, Expression* r)
+  GreaterEqualExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -196,7 +205,7 @@ public:
 class EqualExpr : public BinaryExpr
 {
 public:
-  EqualExpr(Expression* l, Expression* r)
+  EqualExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -204,7 +213,7 @@ public:
 class NotEqualExpr : public BinaryExpr
 {
 public:
-  NotEqualExpr(Expression* l, Expression* r)
+  NotEqualExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -212,7 +221,7 @@ public:
 class AddExpr : public BinaryExpr
 {
 public:
-  AddExpr(Expression* l, Expression* r)
+  AddExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -220,7 +229,7 @@ public:
 class SubExpr : public BinaryExpr
 {
 public:
-  SubExpr(Expression* l, Expression* r)
+  SubExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -228,7 +237,7 @@ public:
 class MultExpr : public BinaryExpr
 {
 public:
-  MultExpr(Expression* l, Expression* r)
+  MultExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -236,7 +245,7 @@ public:
 class DivExpr : public BinaryExpr
 {
 public:
-  DivExpr(Expression* l, Expression* r)
+  DivExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
 };
@@ -244,7 +253,7 @@ public:
 class NotExpr : public UnaryExpr
 {
 public:
-  NotExpr(Expression* child)
+  NotExpr(Expr* child)
   : UnaryExpr(child)
   {}
 };
@@ -252,22 +261,22 @@ public:
 class NegExpr : public UnaryExpr
 {
 public:
-  NegExpr(Expression* child)
+  NegExpr(Expr* child)
   : UnaryExpr(child)
   {}
 };
 
-class StringLiteral : public Expression
+class StringLiteral : public Expr
 {
 public:
-  string m_value;
+  string* m_value;
 
-  StringLiteral(string& val)
-  : m_value(val)
-  {}
+  StringLiteral(char *val) {
+    m_value = new string(val);
+  }
 };
 
-class IntLiteral : public Expression
+class IntLiteral : public Expr
 {
 public:
   int m_value;
@@ -277,7 +286,7 @@ public:
   {}
 };
 
-class FloatLiteral : public Expression
+class FloatLiteral : public Expr
 {
 public:
   double m_value;
@@ -287,18 +296,18 @@ public:
   {}
 };
 
-class FunctionCall : public Expression
+class FunctionCall : public Expr
 {
 public:
-  string m_name;
-  List<Expression*>* m_args;
+  string* m_name;
+  list<Expr*>* m_args;
 
-  FunctionCall(string& name, List<Expression*>* args)
+  FunctionCall(string*name, list<Expr*>* args)
   : m_name(name), m_args(args)
   {}
 };
 
-class VariableExpr : public Expression
+class VariableExpr : public Expr
 {
 public:
   LValue* m_lvalue;
@@ -308,42 +317,42 @@ public:
   {}
 };
 
-class Statement : public Node
+class Stmt : public Node
 {
 };
 
 class Block : public Node
 {
 public:
-  List<Statement*>* m_stmts;
-  List<LocalVarDeclaration*>* m_declarations;
-
+  list<Stmt*> m_stmts;
+  list<LocalVarDeclaration*> m_declarations;
 };
 
-class FuncDeclaration : public Node
+class FuncDefinition : public Node
 {
 public:
-  string m_name;
-  List<ParamDeclaration*>* m_params;
+  string* m_name;
+  list<ParamDeclaration*>* m_params;
+  Type* m_type;
   Block* m_stmts;
 
-  FuncDeclaration(string& name, List<ParamDeclaration*>* params, Block* block)
-  : m_name(name), m_params(params), m_stmts(block)
+  FuncDefinition(string* name, list<ParamDeclaration*>* params, Type* type, Block* block)
+  : m_name(name), m_params(params), m_type(type), m_stmts(block)
   {}
 };
 
-class AssignmentStmt : public Statement
+class AssignmentStmt : public Stmt
 {
 public:
   LValue* m_lvalue;
-  Expression* m_expr;
+  Expr* m_expr;
 
-  AssignmentStmt(LValue* l, Expression* expr)
+  AssignmentStmt(LValue* l, Expr* expr)
   : m_lvalue(l), m_expr(expr)
   {}
 };
 
-class IfStmt : public Statement
+class IfStmt : public Stmt
 {
 public:
   Expr* m_expr;
@@ -376,5 +385,16 @@ public:
   : m_function(function)
   {}
 };
+
+class Program
+{
+public:
+  list<GlobalVarDeclaration*> m_variables;
+  list<FuncDefinition*> m_functions;
+  
+  void resolve();
+};
+
+extern Program* the_program;
 
 #endif
