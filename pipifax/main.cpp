@@ -2,9 +2,10 @@
 #include <string>
 using namespace std;
 
+#include "ast.hpp"
 #include "parser.tab.h"
 #include "lex.yy.h"
-#include "err.h"
+#include "err.hpp"
 
 int main(int argc, const char* argv[])
 {
@@ -16,6 +17,7 @@ int main(int argc, const char* argv[])
       fatal(0,"Cannot open input file %s",argv[1]);
     }
     yyparse();
+    fprintf(stdout,"Done\n");
   }
   return 0;
 }

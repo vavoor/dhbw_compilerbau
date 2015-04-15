@@ -1,20 +1,27 @@
 %{
 #include <string>
+#include <list>
+#include <map>
+
 using namespace std;
 
 #include <string.h>
+#include <stdlib.h>
+
+#include "ast.hpp"
 #include "parser.tab.h"
 #include "lex.yy.h"
-#include "err.h"
+#include "err.hpp"
 
 
 void yyerror(const char* msg);
 %}
 
 %union {
-  const char* s;
+  char* s;
   int i;
   double d;
+  string* str;
 }
 
 %token '(' ')' '[' ']' '{' '}'
@@ -32,8 +39,8 @@ void yyerror(const char* msg);
 %%
 
 program
-    :
-    ;
+  :
+  ;
 
 %%
 
