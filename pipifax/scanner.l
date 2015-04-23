@@ -2,8 +2,7 @@
 #include <string.h>
 #include <stdlib.h>
 
-#include "ast.hpp"
-#include "parser.tab.h"
+#include "parser_inc.hpp"
 
 static char* unescape(const char* s);
 static void p(void);

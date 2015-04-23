@@ -8,9 +8,8 @@ using namespace std;
 #include <string.h>
 #include <stdlib.h>
 
-#include "ast.hpp"
-#include "parser.tab.h"
 #include "lex.yy.h"
+#include "parser_inc.hpp"
 #include "err.hpp"
 
 

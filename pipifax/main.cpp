@@ -2,8 +2,7 @@
 #include <string>
 using namespace std;
 
-#include "ast.hpp"
-#include "parser.tab.h"
+#include "parser_inc.hpp"
 #include "lex.yy.h"
 #include "err.hpp"
 

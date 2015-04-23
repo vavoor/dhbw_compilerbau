@@ -6,13 +6,14 @@
 #include <map>
 using namespace std;
 
+#include "symtab.hpp"
+
 class Expr;
-class SymbolTable;
 
 class Node
 {
 public:
-  virtual void resolve(SymbolTable* symtab);
+  virtual void resolve(SymbolTable* symtab) {};
 };
 
 class Type : public Node
