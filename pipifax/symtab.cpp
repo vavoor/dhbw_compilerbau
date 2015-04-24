@@ -9,7 +9,7 @@ Node* SymbolTable::lookup(string* name)
 {
   for (list<Scope*>::iterator l_it=m_symbols.begin(); l_it!=m_symbols.end(); l_it++) {
     Scope* scope = *l_it;
-    Scope::iterator s_it = scope->find(name);
+    Scope::iterator s_it = scope->find(*name);
     if (s_it!=scope->end()) {
       return s_it->second;
     }
@@ -20,9 +20,9 @@ Node* SymbolTable::lookup(string* name)
 bool SymbolTable::insert(string* name, Node* node)
 {
   Scope* scope = m_symbols.front();
-  Scope::iterator it = scope->find(name);
+  Scope::iterator it = scope->find(*name);
   if (it==scope->end()) {
-    (*scope)[name] = node;
+    (*scope)[*name] = node;
     return true;
   }
   else {

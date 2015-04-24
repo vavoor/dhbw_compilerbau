@@ -1,0 +1,5 @@
+#Function no body
+
+func functionname(a int) int
+{
+}

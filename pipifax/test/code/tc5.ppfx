@@ -1,0 +1,5 @@
+func f(i int, a [15] int, r*int, ra*[] int)
+{
+}
+
+var a int
