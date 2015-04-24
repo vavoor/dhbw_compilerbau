@@ -10,7 +10,7 @@ class Node;
 
 class SymbolTable {
 private:
-  typedef map<string*,Node*> Scope;
+  typedef map<string,Node*> Scope;
   list<Scope*> m_symbols;
 
 public:
