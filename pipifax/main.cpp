@@ -16,6 +16,7 @@ int main(int argc, const char* argv[])
       fatal(0,"Cannot open input file %s",argv[1]);
     }
     yyparse();
+    the_program->resolve();
     fprintf(stdout,"Done\n");
   }
   return 0;
