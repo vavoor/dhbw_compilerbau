@@ -64,12 +64,12 @@ void yyerror(const char* msg);
 %start program
 
 %%
-  
+
 program
   : elements
     { the_program = $1; }
   ;
-  
+
 elements
   : elements global_var_decl
     { $$ = $1; $$->m_variables.push_back($2); }
@@ -112,13 +112,13 @@ param_type_specifier
   | '*' type_specifier
     { $$ = new ReferenceType($2); }
   | '*' '[' ']' type_specifier
-    { $$ = new ArrayRefType($4); }
+    { $$ = new ReferenceType(new DimensionlessArrayType($4)); }
   ;
 
 opt_type_specifier
   : type_specifier
   | /* empty */
-    { $$ = new VoidType(); } /* TODO : should be a flyweight */
+    { $$ = VoidType::getInstance(); }
   ;
 
 block
@@ -154,7 +154,7 @@ assignment
 
 if_stmt
   : T_IF expr block
-    { $$ = new IfStmt($2,$3,NULL); } /* TODO : empty block instead of NULL? */
+    { $$ = new IfStmt($2,$3,new Block()); } /* TODO : empty block instead of NULL? */
   | T_IF expr block T_ELSE block
     { $$ = new IfStmt($2,$3,$5); }
   ;
@@ -254,7 +254,7 @@ var_expr
 lvalue
   : lvalue '[' expr ']'
     { $$ = new ArrayAccess($1,$3); }
-  | ident 
+  | ident
     { $$ = new VarAccess($1); }
   /* TODO : f()[7] = 4? */
   ;
@@ -270,11 +270,11 @@ literal
 
 type_specifier
   : T_INT
-    { $$ = new IntType(); } /* TODO : should be flyweight */
+    { $$ = IntType::getInstance(); }
   | T_FLOAT
-    { $$ = new FloatType(); } /* TODO : should be flyweight */
+    { $$ = FloatType::getInstance(); }
   | T_STRING
-    { $$ = new StringType(); } /* TODO : should be flyweight */
+    { $$ = StringType::getInstance(); }
   | '[' T_INT_VALUE ']' type_specifier
     { $$ = new ArrayType($4,$2); }
   ;

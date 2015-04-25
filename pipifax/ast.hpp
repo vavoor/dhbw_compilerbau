@@ -10,32 +10,85 @@ using namespace std;
 
 class Expr;
 
+/* Superclass for all nodes in the AST */
 class Node
 {
 public:
   virtual void resolve(SymbolTable* symtab) {};
 };
 
+/* Superclass of all nodes representing types */
 class Type : public Node
 {
 };
 
+
+/* There is one object (getInstance) that represents the int type */
 class IntType : public Type
 {
+public:
+  static IntType* getInstance() {
+    if (m_singleton==NULL) {
+      m_singleton = new IntType;
+    }
+    return m_singleton;
+  }
+
+private:
+  static IntType* m_singleton;
+  IntType() {}
 };
 
+/* There is one object (getInstance) that represents the float type */
 class FloatType : public Type
 {
+public:
+  static FloatType* getInstance() {
+    if (m_singleton==NULL) {
+      m_singleton = new FloatType;
+    }
+    return m_singleton;
+  }
+
+private:
+  static FloatType* m_singleton;
+  FloatType() {}
 };
 
+/* There is one object (getInstance) that represents the string type */
 class StringType : public Type
 {
+public:
+  static StringType* getInstance() {
+    if (m_singleton==NULL) {
+      m_singleton = new StringType;
+    }
+    return m_singleton;
+  }
+
+private:
+  static StringType* m_singleton;
+  StringType() {}
 };
 
+/* This object represents a functio with no return type. There is only one object (getInstance) */
 class VoidType : public Type
 {
+public:
+  static VoidType* getInstance() {
+    if (m_singleton==NULL) {
+      m_singleton = new VoidType;
+    }
+    return m_singleton;
+  }
+
+private:
+  static VoidType* m_singleton;
+  VoidType() {}
 };
 
+/* A node of this type represents an array type
+   for a [17] string, m_base is the string type and m_dim is 17 */
 class ArrayType : public Type
 {
 public:
@@ -47,17 +100,20 @@ public:
   {}
 };
 
-/* x *[] int */
-class ArrayRefType : public Type
+/* A node of this type represents an array without a dimension
+   for x *[] int, m_base is the int type */
+class DimensionlessArrayType : public Type
 {
 public:
   Type* m_base;
 
-  ArrayRefType(Type* base)
+  DimensionlessArrayType(Type* base)
   : m_base(base)
   {}
 };
 
+/* A node of this type represents a reference to another type
+   for x* string, m_base is the string type */
 class ReferenceType : public Type
 {
 public:
@@ -68,6 +124,7 @@ public:
   {}
 };
 
+/* Superclass representing all kinds of variable declaration */
 class VarDeclaration : public Node
 {
 public:
@@ -80,6 +137,7 @@ public:
 
 };
 
+/* Represents the declaration of a global variable */
 class GlobalVarDeclaration : public VarDeclaration
 {
 public:
@@ -88,6 +146,7 @@ public:
   {}
 };
 
+/* Represents a parameter in a function definition */
 class ParamDeclaration : public VarDeclaration
 {
 public:
@@ -96,6 +155,7 @@ public:
   {}
 };
 
+/* Represents a declaration of a local variable in a code block */
 class LocalVarDeclaration : public VarDeclaration
 {
 public:
@@ -104,21 +164,24 @@ public:
   {}
 };
 
-/* Kann auf der linken Seite einer Zuweisung vorkommen */
+/* Superclass of variables, that can occur on the left side of an assignment, i.e.
+   they are assignable */
 class LValue : public Node
 {
 };
 
+/* Represents a variable name, e.g. a = ... or a[...]= ... */
 class VarAccess : public LValue
 {
 public:
   string* m_name;
-  
+
   VarAccess(string* name)
   : m_name(name)
   {}
 };
 
+/* Represents an array access, e.g. a[5] */
 class ArrayAccess : public LValue
 {
 public:
@@ -130,10 +193,12 @@ public:
   {}
 };
 
+/* Superclass of all Expressions */
 class Expr : public Node
 {
 };
 
+/* Superclass of all Expressions with two children */
 class BinaryExpr : public Expr
 {
 public:
@@ -145,6 +210,7 @@ public:
   {}
 };
 
+/* Superclass of all expressions with one child */
 class UnaryExpr : public Expr
 {
 public:
@@ -267,6 +333,7 @@ public:
   {}
 };
 
+/* Represents a string literal, such as "Hello Wordl!" */
 class StringLiteral : public Expr
 {
 public:
@@ -277,6 +344,7 @@ public:
   }
 };
 
+/* Represents an integer literal, such as 4711 */
 class IntLiteral : public Expr
 {
 public:
@@ -287,6 +355,7 @@ public:
   {}
 };
 
+/* Represents a float literal, such as 3.1415926 */
 class FloatLiteral : public Expr
 {
 public:
@@ -297,6 +366,7 @@ public:
   {}
 };
 
+/* Represents a call to a function, e.g. sqrt(16) */
 class FunctionCall : public Expr
 {
 public:
@@ -308,6 +378,8 @@ public:
   {}
 };
 
+/* Represents an access to a variable, e.g. a or a[34]. This is a wrapper around a
+   VariableAccess or ArrayAccess with translates the address into a value */
 class VariableExpr : public Expr
 {
 public:
@@ -318,10 +390,12 @@ public:
   {}
 };
 
+/* Superclass for all statements */
 class Stmt : public Node
 {
 };
 
+/* Represents a sequence of variable declarations and statements in curly brackets */
 class Block : public Node
 {
 public:
@@ -329,6 +403,7 @@ public:
   list<LocalVarDeclaration*> m_declarations;
 };
 
+/* Represents a function definition like func f(a int) float {...} */
 class FuncDefinition : public Node
 {
 public:
@@ -342,6 +417,7 @@ public:
   {}
 };
 
+/* Represents an assignment with an lvalue and an expression */
 class AssignmentStmt : public Stmt
 {
 public:
@@ -358,8 +434,7 @@ class IfStmt : public Stmt
 public:
   Expr* m_expr;
   Block* m_true;
-  Block* m_false; /* kann NULL sein
-  */
+  Block* m_false; /* block with no statements if not present  */
 
   IfStmt(Expr* expr, Block* t, Block* f)
   : m_expr(expr), m_true(t), m_false(f)
@@ -377,6 +452,7 @@ public:
   {}
 };
 
+/* Represents a function call as a statement, i.e. it wraps a function call expression */
 class FunctionCallStmt : public Stmt
 {
 public:
@@ -387,12 +463,13 @@ public:
   {}
 };
 
+/* Represents the overall program. It's the root of the AST */
 class Program
 {
 public:
   list<GlobalVarDeclaration*> m_variables;
   list<FuncDefinition*> m_functions;
-  
+
   void resolve();
 };
 
