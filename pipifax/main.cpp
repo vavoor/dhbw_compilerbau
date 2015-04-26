@@ -8,15 +8,21 @@ using namespace std;
 
 int main(int argc, const char* argv[])
 {
+  int errors;
   int yyparse(void);
+  extern int yydebug;
+  //yydebug = 1;
 
   if (argc==2) {
     yyin = fopen(argv[1],"r");
     if (yyin==NULL) {
       fatal(0,"Cannot open input file %s",argv[1]);
     }
-    yyparse();
-    the_program->resolve();
+    errors = yyparse();
+    if (errors==0) {
+      the_program->resolve();
+      errors = get_error_count();
+    }
     fprintf(stdout,"Done\n");
   }
   return 0;

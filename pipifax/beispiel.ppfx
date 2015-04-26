@@ -1,4 +1,5 @@
 # Globale Variablen
+
 var a int
 var b string
 var c[15] float

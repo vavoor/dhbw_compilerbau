@@ -9,6 +9,7 @@ using namespace std;
 #include "symtab.hpp"
 
 class Expr;
+class FuncDefinition;
 
 /* Superclass for all nodes in the AST */
 class Node
@@ -175,13 +176,14 @@ class VarAccess : public LValue
 {
 public:
   string* m_name;
+  VarDeclaration* m_decl;
 
   VarAccess(string* name)
-  : m_name(name)
+  : m_name(name), m_decl(NULL)
   {}
 };
 
-/* Represents an array access, e.g. a[5] */
+/* Represents an array access, e.g. for a[5] m_base is a and m_index is 5 */
 class ArrayAccess : public LValue
 {
 public:
@@ -208,6 +210,11 @@ public:
   BinaryExpr(Expr* l, Expr* r)
   : m_left(l), m_right(r)
   {}
+
+  virtual void resolve(SymbolTable* symtab) {
+    m_left->resolve(symtab);
+    m_right->resolve(symtab);
+  }
 };
 
 /* Superclass of all expressions with one child */
@@ -219,6 +226,10 @@ public:
   UnaryExpr(Expr* child)
   : m_child(child)
   {}
+
+  virtual void resolve(SymbolTable* symtab) {
+    m_child->resolve(symtab);
+  }
 };
 
 class AndExpr : public BinaryExpr
@@ -372,10 +383,13 @@ class FunctionCall : public Expr
 public:
   string* m_name;
   list<Expr*>* m_args;
+  FuncDefinition* m_definition;
 
   FunctionCall(string*name, list<Expr*>* args)
-  : m_name(name), m_args(args)
+  : m_name(name), m_args(args), m_definition(NULL)
   {}
+
+  virtual void resolve(SymbolTable* symtab);
 };
 
 /* Represents an access to a variable, e.g. a or a[34]. This is a wrapper around a
@@ -388,6 +402,10 @@ public:
   VariableExpr(LValue *lval)
   : m_lvalue(lval)
   {}
+
+  virtual void resolve(SymbolTable* symtab) {
+    m_lvalue->resolve(symtab);
+  }
 };
 
 /* Superclass for all statements */
@@ -401,6 +419,8 @@ class Block : public Node
 public:
   list<Stmt*> m_stmts;
   list<LocalVarDeclaration*> m_declarations;
+
+  virtual void resolve(SymbolTable* symtab);
 };
 
 /* Represents a function definition like func f(a int) float {...} */
@@ -410,11 +430,16 @@ public:
   string* m_name;
   list<ParamDeclaration*>* m_params;
   Type* m_type;
+  ParamDeclaration* m_return_value;
   Block* m_stmts;
 
   FuncDefinition(string* name, list<ParamDeclaration*>* params, Type* type, Block* block)
   : m_name(name), m_params(params), m_type(type), m_stmts(block)
-  {}
+  {
+    m_return_value = new ParamDeclaration(m_name,m_type);
+  }
+
+  virtual void resolve(SymbolTable* symtab);
 };
 
 /* Represents an assignment with an lvalue and an expression */
@@ -427,6 +452,11 @@ public:
   AssignmentStmt(LValue* l, Expr* expr)
   : m_lvalue(l), m_expr(expr)
   {}
+
+  virtual void resolve(SymbolTable* symtab) {
+    m_lvalue->resolve(symtab);
+    m_expr->resolve(symtab);
+  }
 };
 
 class IfStmt : public Stmt
@@ -439,6 +469,12 @@ public:
   IfStmt(Expr* expr, Block* t, Block* f)
   : m_expr(expr), m_true(t), m_false(f)
   {}
+
+  virtual void resolve(SymbolTable* symtab) {
+    m_expr->resolve(symtab);
+    m_true->resolve(symtab);
+    m_false->resolve(symtab);
+  }
 };
 
 class WhileStmt : public Stmt
@@ -450,6 +486,11 @@ public:
   WhileStmt(Expr* expr, Block* stmts)
   : m_expr(expr), m_stmts(stmts)
   {}
+
+  virtual void resolve(SymbolTable* symtab) {
+    m_expr->resolve(symtab);
+    m_stmts->resolve(symtab);
+  }
 };
 
 /* Represents a function call as a statement, i.e. it wraps a function call expression */
@@ -461,6 +502,10 @@ public:
   FunctionCallStmt(FunctionCall* function)
   : m_function(function)
   {}
+
+  virtual void resolve(SymbolTable* symtab) {
+    m_function->resolve(symtab);
+  }
 };
 
 /* Represents the overall program. It's the root of the AST */
