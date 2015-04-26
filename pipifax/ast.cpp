@@ -1,5 +1,5 @@
 #include "ast.hpp"
-#include "err.h"
+#include "err.hpp"
 #include "symtab.hpp"
 
 Program* the_program;
@@ -16,20 +16,36 @@ void Program::resolve()
   for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
     FuncDefinition* func = *func_it;
     if (!symtab.insertFunction(func->m_name,func)) {
-      err(0,"Duplicate function %s",func->m_name->c_str());
+      errmsg("Duplicate function %s",func->m_name->c_str());
     }
   }
 
   for (list<GlobalVarDeclaration*>::iterator var_it = m_variables.begin(); var_it!=m_variables.end(); var_it++) {
     GlobalVarDeclaration* var = *var_it;
     if (!symtab.insertVariable(var->m_name,var)) {
-      err(0,"Duplicate global variable %s",var->m_name->c_str());
+      errmsg("Duplicate global variable %s",var->m_name->c_str());
     }
   }
 
   for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
     FuncDefinition* func = *func_it;
     func->resolve(&symtab);
+  }
+}
+
+void Program::calculate_types()
+{
+  for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
+    FuncDefinition* func = *func_it;
+    func->calculate_types();
+  }
+}
+
+void Program::check_types()
+{
+  for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
+    FuncDefinition* func = *func_it;
+    func->check_types();
   }
 }
 
@@ -66,10 +82,63 @@ void Block::resolve(SymbolTable* symtab)
   symtab->leaveScope();
 }
 
+void Block::calculate_types()
+{
+  for (list<Stmt*>::iterator it=m_stmts.begin(); it!=m_stmts.end(); it++) {
+    Stmt* stmt = *it;
+    stmt->calculate_types();
+  }
+}
+
+void Block::check_types()
+{
+  for (list<Stmt*>::iterator it=m_stmts.begin(); it!=m_stmts.end(); it++) {
+    Stmt* stmt = *it;
+    stmt->check_types();
+  }
+}
+
+void AssignmentStmt::check_types()
+{
+
+}
+
 void FunctionCall::resolve(SymbolTable* symtab)
 {
   m_definition = symtab->lookupFunction(m_name);
   if (m_definition==NULL) {
-    err(0,"Call of undefined function %s",m_name->c_str());
+    errmsg("Call of undefined function %s",m_name->c_str());
   }
+
+  for (list<Expr*>::iterator it=m_args->begin(); it!=m_args->end(); it++) {
+    Expr* expr = *it;
+    expr->resolve(symtab);
+  }
+}
+
+void FunctionCall::calculate_types()
+{
+  m_type = m_definition->m_type;
+  for (list<Expr*>::iterator it=m_args->begin(); it!=m_args->end(); it++) {
+    Expr* expr = *it;
+    expr->calculate_types();
+  }
+}
+
+void VarAccess::resolve(SymbolTable* symtab)
+{
+  m_decl = symtab->lookupVariable(m_name);
+  if (m_decl==NULL) {
+    errmsg("Undefined variable %s",m_name->c_str());
+  }
+}
+
+void ArithmeticExpr::calculate_types()
+{
+  /* TODO */
+}
+
+void NegExpr::calculate_types()
+{
+  /* TODO */
 }

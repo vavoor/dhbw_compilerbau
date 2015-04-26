@@ -23,6 +23,15 @@ int main(int argc, const char* argv[])
       the_program->resolve();
       errors = get_error_count();
     }
+    if (errors==0) {
+      the_program->calculate_types();
+      errors = get_error_count();
+    }
+    if (errors==0) {
+      the_program->check_types();
+      errors = get_error_count();
+    }
+
     fprintf(stdout,"Done\n");
   }
   return 0;

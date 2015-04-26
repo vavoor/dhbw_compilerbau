@@ -15,12 +15,19 @@ class FuncDefinition;
 class Node
 {
 public:
-  virtual void resolve(SymbolTable* symtab) {};
+  virtual void resolve(SymbolTable* symtab) {}
+  virtual void calculate_types() {}
+  virtual void check_types() {}
 };
 
 /* Superclass of all nodes representing types */
 class Type : public Node
 {
+public:
+
+  virtual Type* value_type() {
+    return this;
+  }
 };
 
 
@@ -99,6 +106,10 @@ public:
   ArrayType(Type* base, int dimension)
   : m_base(base), m_dim(dimension)
   {}
+
+  virtual Type* value_type() {
+    return m_base;
+  }
 };
 
 /* A node of this type represents an array without a dimension
@@ -111,6 +122,10 @@ public:
   DimensionlessArrayType(Type* base)
   : m_base(base)
   {}
+
+  virtual Type* value_type() {
+    return m_base;
+  }
 };
 
 /* A node of this type represents a reference to another type
@@ -123,6 +138,10 @@ public:
   ReferenceType(Type* base)
   : m_base(base)
   {}
+
+  virtual Type* value_type() {
+    return m_base;
+  }
 };
 
 /* Superclass representing all kinds of variable declaration */
@@ -165,10 +184,19 @@ public:
   {}
 };
 
+/* Superclass of all Expressions */
+class Expr : public Node
+{
+public:
+  Type* m_type;
+};
+
 /* Superclass of variables, that can occur on the left side of an assignment, i.e.
    they are assignable */
 class LValue : public Node
 {
+public:
+  Type* m_type;
 };
 
 /* Represents a variable name, e.g. a = ... or a[...]= ... */
@@ -181,6 +209,11 @@ public:
   VarAccess(string* name)
   : m_name(name), m_decl(NULL)
   {}
+
+  virtual void resolve(SymbolTable* symtab);
+  virtual void calculate_types() {
+    m_type = m_decl->m_type->value_type();
+  }
 };
 
 /* Represents an array access, e.g. for a[5] m_base is a and m_index is 5 */
@@ -193,11 +226,15 @@ public:
   ArrayAccess(LValue *base, Expr *expr)
   : m_base(base), m_index(expr)
   {}
-};
 
-/* Superclass of all Expressions */
-class Expr : public Node
-{
+  virtual void resolve(SymbolTable* symtab) {
+    m_base->resolve(symtab);
+    m_index->resolve(symtab);
+  }
+
+  virtual void calculate_types() {
+    m_type = m_base->m_type->value_type();
+  }
 };
 
 /* Superclass of all Expressions with two children */
@@ -214,6 +251,11 @@ public:
   virtual void resolve(SymbolTable* symtab) {
     m_left->resolve(symtab);
     m_right->resolve(symtab);
+  }
+
+  /* Valid for most subtypes ... */
+  virtual void calculate_types() {
+    m_type = IntType::getInstance();
   }
 };
 
@@ -248,83 +290,101 @@ public:
   {}
 };
 
-class LessExpr : public BinaryExpr
+class CompExpr : public BinaryExpr
+{
+public:
+  CompExpr(Expr* l, Expr* r)
+  : BinaryExpr(l,r)
+  {}
+};
+
+class LessExpr : public CompExpr
 {
 public:
   LessExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : CompExpr(l,r)
   {}
 };
 
-class LessEqualExpr : public BinaryExpr
+class LessEqualExpr : public CompExpr
 {
 public:
   LessEqualExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : CompExpr(l,r)
   {}
 };
 
-class GreaterExpr : public BinaryExpr
+class GreaterExpr : public CompExpr
 {
 public:
   GreaterExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : CompExpr(l,r)
   {}
 };
 
-class GreaterEqualExpr : public BinaryExpr
+class GreaterEqualExpr : public CompExpr
 {
 public:
   GreaterEqualExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : CompExpr(l,r)
   {}
 };
 
-class EqualExpr : public BinaryExpr
+class EqualExpr : public CompExpr
 {
 public:
   EqualExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : CompExpr(l,r)
   {}
 };
 
-class NotEqualExpr : public BinaryExpr
+class NotEqualExpr : public CompExpr
 {
 public:
   NotEqualExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : CompExpr(l,r)
   {}
 };
 
-class AddExpr : public BinaryExpr
+class ArithmeticExpr : public BinaryExpr
+{
+public:
+  ArithmeticExpr(Expr* l, Expr* r)
+  : BinaryExpr(l,r)
+  {}
+
+  virtual void calculate_types();
+};
+
+class AddExpr : public ArithmeticExpr
 {
 public:
   AddExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : ArithmeticExpr(l,r)
   {}
 };
 
-class SubExpr : public BinaryExpr
+class SubExpr : public ArithmeticExpr
 {
 public:
   SubExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : ArithmeticExpr(l,r)
   {}
 };
 
-class MultExpr : public BinaryExpr
+class MultExpr : public ArithmeticExpr
 {
 public:
   MultExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : ArithmeticExpr(l,r)
   {}
 };
 
-class DivExpr : public BinaryExpr
+class DivExpr : public ArithmeticExpr
 {
 public:
   DivExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : ArithmeticExpr(l,r)
   {}
 };
 
@@ -334,6 +394,10 @@ public:
   NotExpr(Expr* child)
   : UnaryExpr(child)
   {}
+
+  virtual void calculate_types() {
+    m_type = IntType::getInstance();
+  }
 };
 
 class NegExpr : public UnaryExpr
@@ -342,6 +406,32 @@ public:
   NegExpr(Expr* child)
   : UnaryExpr(child)
   {}
+
+  virtual void calculate_types();
+};
+
+class IntConversion : public UnaryExpr
+{
+public:
+  IntConversion(Expr* expr)
+  : UnaryExpr(expr)
+  {}
+
+  virtual void calculate_types() {
+    m_type = IntType::getInstance();
+  }
+};
+
+class FloatConversion : public UnaryExpr
+{
+public:
+  FloatConversion(Expr* expr)
+  : UnaryExpr(expr)
+  {}
+
+  virtual void calculate_types() {
+    m_type = FloatType::getInstance();
+  }
 };
 
 /* Represents a string literal, such as "Hello Wordl!" */
@@ -352,6 +442,10 @@ public:
 
   StringLiteral(char *val) {
     m_value = new string(val);
+  }
+
+  virtual void calculate_types() {
+    m_type = StringType::getInstance();
   }
 };
 
@@ -364,6 +458,10 @@ public:
   IntLiteral(int val)
   : m_value(val)
   {}
+
+  virtual void calculate_types() {
+    m_type = IntType::getInstance();
+  }
 };
 
 /* Represents a float literal, such as 3.1415926 */
@@ -375,6 +473,10 @@ public:
   FloatLiteral(double val)
   : m_value(val)
   {}
+
+  virtual void calculate_types() {
+    m_type = FloatType::getInstance();
+  }
 };
 
 /* Represents a call to a function, e.g. sqrt(16) */
@@ -390,6 +492,7 @@ public:
   {}
 
   virtual void resolve(SymbolTable* symtab);
+  virtual void calculate_types();
 };
 
 /* Represents an access to a variable, e.g. a or a[34]. This is a wrapper around a
@@ -406,6 +509,10 @@ public:
   virtual void resolve(SymbolTable* symtab) {
     m_lvalue->resolve(symtab);
   }
+
+  virtual void calculate_types() {
+    m_type = m_lvalue->m_type;
+  }
 };
 
 /* Superclass for all statements */
@@ -421,6 +528,8 @@ public:
   list<LocalVarDeclaration*> m_declarations;
 
   virtual void resolve(SymbolTable* symtab);
+  virtual void calculate_types();
+  virtual void check_types();
 };
 
 /* Represents a function definition like func f(a int) float {...} */
@@ -440,6 +549,13 @@ public:
   }
 
   virtual void resolve(SymbolTable* symtab);
+  virtual void calculate_types() {
+    m_stmts->calculate_types();
+  }
+
+  virtual void check_types() {
+    m_stmts->check_types();
+  }
 };
 
 /* Represents an assignment with an lvalue and an expression */
@@ -457,6 +573,13 @@ public:
     m_lvalue->resolve(symtab);
     m_expr->resolve(symtab);
   }
+
+  virtual void calculate_types() {
+    m_lvalue->calculate_types();
+    m_expr->calculate_types();
+  }
+
+  virtual void check_types();
 };
 
 class IfStmt : public Stmt
@@ -475,6 +598,12 @@ public:
     m_true->resolve(symtab);
     m_false->resolve(symtab);
   }
+
+  virtual void calculate_types() {
+    m_expr->calculate_types();
+    m_true->calculate_types();
+    m_false->calculate_types();
+  }
 };
 
 class WhileStmt : public Stmt
@@ -491,6 +620,11 @@ public:
     m_expr->resolve(symtab);
     m_stmts->resolve(symtab);
   }
+
+  virtual void calculate_types() {
+    m_expr->calculate_types();
+    m_stmts->calculate_types();
+  }
 };
 
 /* Represents a function call as a statement, i.e. it wraps a function call expression */
@@ -506,6 +640,10 @@ public:
   virtual void resolve(SymbolTable* symtab) {
     m_function->resolve(symtab);
   }
+
+  virtual void calculate_types() {
+    m_function->calculate_types();
+  }
 };
 
 /* Represents the overall program. It's the root of the AST */
@@ -516,6 +654,8 @@ public:
   list<FuncDefinition*> m_functions;
 
   void resolve();
+  void calculate_types();
+  void check_types();
 };
 
 extern Program* the_program;

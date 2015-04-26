@@ -55,7 +55,7 @@ void yyerror(const char* msg);
 %type<var_decls> opt_param_list param_list
 %type<block> block var_or_stmt_list
 %type<stmt> statement assignment if_stmt while_stmt func_call_stmt
-%type<expr> expr or_expr and_expr comp_expr add_expr mult_expr unary_expr var_expr literal
+%type<expr> expr or_expr and_expr comp_expr add_expr mult_expr unary_expr var_expr literal conversion
 %type<func_call> func_call
 %type<exprs> opt_arg_list arg_list
 %type<lvalue> lvalue
@@ -237,13 +237,23 @@ unary_expr
     { $$ = new NotExpr($2); }
   | func_call
     { $$ = $1; }
+  | conversion
   | var_expr
   | literal
+  | '(' expr ')'
+    { $$ = $2; }
   ;
 
 func_call
   : ident '(' opt_arg_list ')' /* TODO : what about f()[5], i.e. is a function call an lvalue ?*/
     { $$ = new FunctionCall($1,$3); }
+  ;
+
+conversion
+  : T_INT '(' expr ')'
+    { $$ = new IntConversion($3); }
+  | T_FLOAT '(' expr ')'
+    { $$ = new FloatConversion($3); }
   ;
 
 var_expr
