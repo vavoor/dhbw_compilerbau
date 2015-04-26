@@ -29,8 +29,6 @@ void Program::resolve()
 
   for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
     FuncDefinition* func = *func_it;
-    if (!symtab.insert(func->m_name,func)) {
-      err(0,"Duplicate name %s",func->m_name->c_str());
-    }
+
   }
 }
