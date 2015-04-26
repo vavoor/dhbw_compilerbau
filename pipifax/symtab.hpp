@@ -6,23 +6,28 @@
 #include <map>
 using namespace std;
 
-class Node;
+class VarDeclaration;
+class FuncDefinition;
 
 class SymbolTable {
 private:
-  typedef map<string,Node*> Scope;
-  list<Scope*> m_symbols;
+  typedef map<string,VarDeclaration*> Scope;
+  list<Scope*> m_variables;
+  map<string,FuncDefinition*> m_functions;
 
 public:
   SymbolTable();
-  
-  Node* lookup(string* name);
-  
+
+  VarDeclaration* lookupVariable(string* name);
+
   /* Returns true if the element has been inserted */
-  bool insert(string* name, Node* node);
-  
+  bool insertVariable(string* name, VarDeclaration* var);
+
   void enterScope();
   void leaveScope();
+
+  FuncDefinition* lookupFunction(string* name);
+  bool insertFunction(string* name, FuncDefinition* func);
 };
 
 #endif

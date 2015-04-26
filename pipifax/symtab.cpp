@@ -5,9 +5,9 @@ SymbolTable::SymbolTable()
   enterScope(); /* global scope always exists */
 }
 
-Node* SymbolTable::lookup(string* name)
+VarDeclaration* SymbolTable::lookupVariable(string* name)
 {
-  for (list<Scope*>::iterator l_it=m_symbols.begin(); l_it!=m_symbols.end(); l_it++) {
+  for (list<Scope*>::iterator l_it=m_variables.begin(); l_it!=m_variables.end(); l_it++) {
     Scope* scope = *l_it;
     Scope::iterator s_it = scope->find(*name);
     if (s_it!=scope->end()) {
@@ -17,9 +17,9 @@ Node* SymbolTable::lookup(string* name)
   return NULL;
 }
 
-bool SymbolTable::insert(string* name, Node* node)
+bool SymbolTable::insertVariable(string* name, VarDeclaration* node)
 {
-  Scope* scope = m_symbols.front();
+  Scope* scope = m_variables.front();
   Scope::iterator it = scope->find(*name);
   if (it==scope->end()) {
     (*scope)[*name] = node;
@@ -33,12 +33,35 @@ bool SymbolTable::insert(string* name, Node* node)
 void SymbolTable::enterScope()
 {
   Scope* scope = new Scope();
-  m_symbols.push_front(scope);
+  m_variables.push_front(scope);
 }
 
 void SymbolTable::leaveScope()
 {
-  Scope* scope = m_symbols.front();
-  m_symbols.pop_front();
+  Scope* scope = m_variables.front();
+  m_variables.pop_front();
   delete scope;
+}
+
+FuncDefinition* SymbolTable::lookupFunction(string* name)
+{
+  map<string,FuncDefinition*>::iterator it = m_functions.find(*name);
+  if (it!=m_functions.end()) {
+    return it->second;
+  }
+  else {
+    return NULL;
+  }
+}
+
+bool SymbolTable::insertFunction(string* name, FuncDefinition* func)
+{
+  map<string,FuncDefinition*>::iterator it = m_functions.find(*name);
+  if (it==m_functions.end()) {
+    m_functions[*name] = func;
+    return true;
+  }
+  else {
+    return false;
+  }
 }
