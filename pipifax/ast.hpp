@@ -333,6 +333,22 @@ public:
   {}
 };
 
+class IntConversion : public UnaryExpr
+{
+public:
+  IntConversion(Expr* child)
+  : UnaryExpr(expr)
+  {}
+};
+
+class FloatConversion : public UnaryExpr
+{
+public:
+  FloatConversion(Expr* expr)
+  : UnaryExpr(expr)
+  {}
+};
+
 /* Represents a string literal, such as "Hello Wordl!" */
 class StringLiteral : public Expr
 {
