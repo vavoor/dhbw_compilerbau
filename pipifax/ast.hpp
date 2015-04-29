@@ -336,7 +336,7 @@ public:
 class IntConversion : public UnaryExpr
 {
 public:
-  IntConversion(Expr* child)
+  IntConversion(Expr* expr)
   : UnaryExpr(expr)
   {}
 };
