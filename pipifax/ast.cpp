@@ -4,10 +4,10 @@
 
 Program* the_program;
 
-IntType* IntType::m_singleton = NULL;
-FloatType* FloatType::m_singleton = NULL;
-StringType* StringType::m_singleton = NULL;
-VoidType* VoidType::m_singleton = NULL;
+IntType* IntType::m_instance = NULL;
+FloatType* FloatType::m_instance = NULL;
+StringType* StringType::m_instance = NULL;
+VoidType* VoidType::m_instance = NULL;
 
 void Program::resolve()
 {
@@ -30,14 +30,6 @@ void Program::resolve()
   for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
     FuncDefinition* func = *func_it;
     func->resolve(&symtab);
-  }
-}
-
-void Program::calculate_types()
-{
-  for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
-    FuncDefinition* func = *func_it;
-    func->calculate_types();
   }
 }
 
@@ -100,7 +92,11 @@ void Block::check_types()
 
 void AssignmentStmt::check_types()
 {
-
+  m_lvalue->check_types();
+  m_expr->check_types();
+  if (!m_lvalue->is_compatible(m_expr->m_type)) {
+    errmsg("Assignment of incompatible types");
+  }
 }
 
 void FunctionCall::resolve(SymbolTable* symtab)

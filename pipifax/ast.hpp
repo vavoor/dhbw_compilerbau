@@ -24,10 +24,22 @@ public:
 class Type : public Node
 {
 public:
-
+  /* Returns the type of a value of this type. This is to solve the problem that the
+     value type of a reference is not a reference but the referenced type 0*/
   virtual Type* value_type() {
     return this;
   }
+
+  virtual bool is_compatible(Type* t) = 0;
+
+protected:
+  virtual bool is_compatible_with(IntType* t) { return false; }
+  virtual bool is_compatible_with(FloatType* t) { return false; }
+  virtual bool is_compatible_with(StringType* t) { return false; }
+  virtual bool is_compatible_with(VoidType* t) { return false; }
+  virtual bool is_compatible_with(ArrayType* t) { return false; }
+  virtual bool is_compatible_with(DimensionlessArrayType* t) { return false; }
+  virtual bool is_compatible_with(ReferenceType* t) { return false; }
 };
 
 
@@ -36,14 +48,23 @@ class IntType : public Type
 {
 public:
   static IntType* getInstance() {
-    if (m_singleton==NULL) {
-      m_singleton = new IntType;
+    if (m_instance==NULL) {
+      m_instance = new IntType;
     }
-    return m_singleton;
+    return m_instance;
+  }
+
+  virtual bool is_compatible(Type* t) {
+    return t->is_compatible_with(this);
+  }
+
+protected:
+  virtual bool is_compatible_with(IntType* t) {
+    return true;
   }
 
 private:
-  static IntType* m_singleton;
+  static IntType* m_instance;
   IntType() {}
 };
 
@@ -52,14 +73,23 @@ class FloatType : public Type
 {
 public:
   static FloatType* getInstance() {
-    if (m_singleton==NULL) {
-      m_singleton = new FloatType;
+    if (m_instance==NULL) {
+      m_instance = new FloatType;
     }
-    return m_singleton;
+    return m_instance;
+  }
+
+  virtual bool is_compatible(Type* t) {
+    return t->is_compatible_with(this);
+  }
+
+protected:
+  virtual bool is_compatible_with(FloatType* t) {
+    return true;
   }
 
 private:
-  static FloatType* m_singleton;
+  static FloatType* m_instance;
   FloatType() {}
 };
 
@@ -68,14 +98,23 @@ class StringType : public Type
 {
 public:
   static StringType* getInstance() {
-    if (m_singleton==NULL) {
-      m_singleton = new StringType;
+    if (m_instance==NULL) {
+      m_instance = new StringType;
     }
-    return m_singleton;
+    return m_instance;
+  }
+
+  virtual bool is_compatible(Type* t) {
+    return t->is_compatible_with(this);
+  }
+
+protected:
+  virtual bool is_compatible_with(StringType* t) {
+    return true;
   }
 
 private:
-  static StringType* m_singleton;
+  static StringType* m_instance;
   StringType() {}
 };
 
@@ -84,14 +123,18 @@ class VoidType : public Type
 {
 public:
   static VoidType* getInstance() {
-    if (m_singleton==NULL) {
-      m_singleton = new VoidType;
+    if (m_instance==NULL) {
+      m_instance = new VoidType;
     }
-    return m_singleton;
+    return m_instance;
+  }
+
+  virtual bool is_compatible(Type* t) {
+    return t->is_compatible_with(this);
   }
 
 private:
-  static VoidType* m_singleton;
+  static VoidType* m_instance;
   VoidType() {}
 };
 
@@ -110,6 +153,15 @@ public:
   virtual Type* value_type() {
     return m_base;
   }
+
+  virtual bool is_compatible(Type* t) {
+    return t->is_compatible_with(this);
+  }
+
+protected:
+  virtual bool is_compatible_with(ArrayType* t) {
+    return m_dim==t->m_dim && m_base->is_compatible(t->m_base);
+  }
 };
 
 /* A node of this type represents an array without a dimension
@@ -125,6 +177,18 @@ public:
 
   virtual Type* value_type() {
     return m_base;
+  }
+
+  virtual bool is_compatible(Type* t) {
+    return t->is_compatible_with(this);
+  }
+
+protected:
+  virtual bool is_compatible_with(DimensionlessArrayType* t) {
+    /* TODO : can a dimensionless array be assigned? Think of assigning parameters in a function call! */
+  }
+  virtual bool is_compatible_with(ArrayType* t) {
+    /* TODO : can a dimensionless array be assigned? */
   }
 };
 
@@ -142,7 +206,10 @@ public:
   virtual Type* value_type() {
     return m_base;
   }
+
+  virtual bool is_compatible(Type* t) { return is_compatible_with(this); }
 };
+
 
 /* Superclass representing all kinds of variable declaration */
 class VarDeclaration : public Node
@@ -549,9 +616,6 @@ public:
   }
 
   virtual void resolve(SymbolTable* symtab);
-  virtual void calculate_types() {
-    m_stmts->calculate_types();
-  }
 
   virtual void check_types() {
     m_stmts->check_types();
@@ -572,11 +636,6 @@ public:
   virtual void resolve(SymbolTable* symtab) {
     m_lvalue->resolve(symtab);
     m_expr->resolve(symtab);
-  }
-
-  virtual void calculate_types() {
-    m_lvalue->calculate_types();
-    m_expr->calculate_types();
   }
 
   virtual void check_types();
@@ -654,7 +713,6 @@ public:
   list<FuncDefinition*> m_functions;
 
   void resolve();
-  void calculate_types();
   void check_types();
 };
 
