@@ -14,11 +14,11 @@ void fatal(int lineno, const char* msg, ...)
   vfprintf(stderr,msg,args);
   fprintf(stderr,"\n");
   va_end(args);
-  err_count++; 
+  err_count++;
   exit(1);
 }
 
-void err(const char* msg, ...)
+void errmsg(const char* msg, ...)
 {
   va_list args;
   va_start(args,msg);

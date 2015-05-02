@@ -8,9 +8,8 @@ using namespace std;
 #include <string.h>
 #include <stdlib.h>
 
-#include "ast.hpp"
-#include "parser.tab.h"
 #include "lex.yy.h"
+#include "parser_inc.hpp"
 #include "err.hpp"
 
 
@@ -56,7 +55,7 @@ void yyerror(const char* msg);
 %type<var_decls> opt_param_list param_list
 %type<block> block var_or_stmt_list
 %type<stmt> statement assignment if_stmt while_stmt func_call_stmt
-%type<expr> expr or_expr and_expr comp_expr add_expr mult_expr unary_expr var_expr literal
+%type<expr> expr or_expr and_expr comp_expr add_expr mult_expr unary_expr var_expr literal conversion
 %type<func_call> func_call
 %type<exprs> opt_arg_list arg_list
 %type<lvalue> lvalue
@@ -65,12 +64,12 @@ void yyerror(const char* msg);
 %start program
 
 %%
-  
+
 program
   : elements
     { the_program = $1; }
   ;
-  
+
 elements
   : elements global_var_decl
     { $$ = $1; $$->m_variables.push_back($2); }
@@ -113,13 +112,13 @@ param_type_specifier
   | '*' type_specifier
     { $$ = new ReferenceType($2); }
   | '*' '[' ']' type_specifier
-    { $$ = new ArrayRefType($4); }
+    { $$ = new ReferenceType(new DimensionlessArrayType($4)); }
   ;
 
 opt_type_specifier
   : type_specifier
   | /* empty */
-    { $$ = new VoidType(); } /* TODO : should be a flyweight */
+    { $$ = VoidType::getInstance(); }
   ;
 
 block
@@ -155,7 +154,7 @@ assignment
 
 if_stmt
   : T_IF expr block
-    { $$ = new IfStmt($2,$3,NULL); } /* TODO : empty block instead of NULL? */
+    { $$ = new IfStmt($2,$3,new Block()); } /* TODO : empty block instead of NULL? */
   | T_IF expr block T_ELSE block
     { $$ = new IfStmt($2,$3,$5); }
   ;
@@ -238,13 +237,23 @@ unary_expr
     { $$ = new NotExpr($2); }
   | func_call
     { $$ = $1; }
+  | conversion
   | var_expr
   | literal
+  | '(' expr ')'
+    { $$ = $2; }
   ;
 
 func_call
   : ident '(' opt_arg_list ')' /* TODO : what about f()[5], i.e. is a function call an lvalue ?*/
     { $$ = new FunctionCall($1,$3); }
+  ;
+
+conversion
+  : T_INT '(' expr ')'
+    { $$ = new IntConversion($3); }
+  | T_FLOAT '(' expr ')'
+    { $$ = new FloatConversion($3); }
   ;
 
 var_expr
@@ -255,7 +264,7 @@ var_expr
 lvalue
   : lvalue '[' expr ']'
     { $$ = new ArrayAccess($1,$3); }
-  | ident 
+  | ident
     { $$ = new VarAccess($1); }
   /* TODO : f()[7] = 4? */
   ;
@@ -271,11 +280,11 @@ literal
 
 type_specifier
   : T_INT
-    { $$ = new IntType(); } /* TODO : should be flyweight */
+    { $$ = IntType::getInstance(); }
   | T_FLOAT
-    { $$ = new FloatType(); } /* TODO : should be flyweight */
+    { $$ = FloatType::getInstance(); }
   | T_STRING
-    { $$ = new StringType(); } /* TODO : should be flyweight */
+    { $$ = StringType::getInstance(); }
   | '[' T_INT_VALUE ']' type_specifier
     { $$ = new ArrayType($4,$2); }
   ;

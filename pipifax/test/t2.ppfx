@@ -1,0 +1,13 @@
+
+var ein_langer_123_Name int
+var ein_float_wer float
+
+var
+
+das_ist_ein_string
+
+string
+
+var und_das_123 [] float
+
+var multi_dimensional_array[11][22][33][44]int
