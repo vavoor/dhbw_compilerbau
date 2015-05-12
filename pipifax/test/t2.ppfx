@@ -8,6 +8,6 @@ das_ist_ein_string
 
 string
 
-var und_das_123 [] float
+var und_das_123 [14] float
 
 var multi_dimensional_array[11][22][33][44]int
