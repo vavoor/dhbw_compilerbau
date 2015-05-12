@@ -119,6 +119,19 @@ void FunctionCall::calculate_types()
     Expr* expr = *it;
     expr->calculate_types();
   }
+
+  if (m_args->size()==m_definition->m_params->size()) {
+    list<ParamDeclaration*>::iterator it_p = m_definition->m_params->begin();
+    list<Expr*>::iterator it_a = m_args->begin();
+    while (it_a!=m_args->end()) {
+      kkk
+      it_p++;
+      it_a++;
+    }
+  }
+  else {
+    errmsg("Incompatible number of arguments");
+  }
 }
 
 void VarAccess::resolve(SymbolTable* symtab)
