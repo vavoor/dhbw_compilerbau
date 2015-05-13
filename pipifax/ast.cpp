@@ -86,9 +86,19 @@ void AssignmentStmt::check_types()
 {
   m_lvalue->check_types();
   m_expr->check_types();
-  if (!m_lvalue->is_compatible(m_expr->m_type)) {
-    errmsg("Assignment of incompatible types");
-  }
+}
+
+void IfStmt::check_types()
+{
+  m_expr->check_types();
+  m_true->check_types();
+  m_false->check_types();
+}
+
+void WhileStmt::check_types()
+{
+  m_expr->check_types();
+  m_stmts->check_types();
 }
 
 void FunctionCall::resolve(SymbolTable* symtab)
@@ -116,9 +126,6 @@ void FunctionCall::check_types()
     list<ParamDeclaration*>::iterator it_p = m_definition->m_params->begin();
     list<Expr*>::iterator it_a = m_args->begin();
     while (it_a!=m_args->end()) {
-      if (!(*it_a)->is_compatible(*it_p)) {
-        errmsg("Incompatible types in function call");
-      }
       it_p++;
       it_a++;
     }

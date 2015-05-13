@@ -10,13 +10,19 @@ using namespace std;
 
 class Expr;
 class FuncDefinition;
+class IntType;
+class StringType;
+class FloatType;
+class VoidType;
+class ArrayType;
+class ReferenceType;
+class DimensionlessArrayType;
 
 /* Superclass for all nodes in the AST */
 class Node
 {
 public:
   virtual void resolve(SymbolTable* symtab) {}
-  virtual void calculate_types() {}
   virtual void check_types() {}
 };
 
@@ -32,7 +38,6 @@ public:
 
   virtual bool is_compatible(Type* t) = 0;
 
-protected:
   virtual bool is_compatible_with(IntType* t) { return false; }
   virtual bool is_compatible_with(FloatType* t) { return false; }
   virtual bool is_compatible_with(StringType* t) { return false; }
@@ -277,7 +282,7 @@ public:
   {}
 
   virtual void resolve(SymbolTable* symtab);
-  virtual void calculate_types() {
+  virtual void check_types() {
     m_type = m_decl->m_type->value_type();
   }
 };
@@ -298,7 +303,8 @@ public:
     m_index->resolve(symtab);
   }
 
-  virtual void calculate_types() {
+  virtual void check_types() {
+    m_base->check_types();
     m_type = m_base->m_type->value_type();
   }
 };
@@ -321,7 +327,9 @@ public:
 
   /* Valid for most subtypes ... */
   virtual void calculate_types() {
-    m_type = IntType::getInstance();
+    m_left->check_types();
+    m_right->check_types();
+    /* TODO : set m_type! */
   }
 };
 
@@ -337,6 +345,11 @@ public:
 
   virtual void resolve(SymbolTable* symtab) {
     m_child->resolve(symtab);
+  }
+  
+  virtual void check_types() {
+    m_child->check_types();
+    /* TODO : set m_type! */
   }
 };
 
@@ -483,7 +496,8 @@ public:
   : UnaryExpr(expr)
   {}
 
-  virtual void calculate_types() {
+  virtual void check_types() {
+    UnaryExpr::check_types();
     m_type = IntType::getInstance();
   }
 };
@@ -495,7 +509,8 @@ public:
   : UnaryExpr(expr)
   {}
 
-  virtual void calculate_types() {
+  virtual void check_types() {
+    UnaryExpr::check_types();
     m_type = FloatType::getInstance();
   }
 };
@@ -510,7 +525,7 @@ public:
     m_value = new string(val);
   }
 
-  virtual void calculate_types() {
+  virtual void check_types() {
     m_type = StringType::getInstance();
   }
 };
@@ -525,7 +540,7 @@ public:
   : m_value(val)
   {}
 
-  virtual void calculate_types() {
+  virtual void check_types() {
     m_type = IntType::getInstance();
   }
 };
@@ -558,7 +573,7 @@ public:
   {}
 
   virtual void resolve(SymbolTable* symtab);
-  virtual void calculate_types();
+  virtual void check_types();
 };
 
 /* Represents an access to a variable, e.g. a or a[34]. This is a wrapper around a
@@ -576,7 +591,8 @@ public:
     m_lvalue->resolve(symtab);
   }
 
-  virtual void calculate_types() {
+  virtual void check_types() {
+    m_lvalue->check_types();
     m_type = m_lvalue->m_type;
   }
 };
@@ -594,7 +610,6 @@ public:
   list<LocalVarDeclaration*> m_declarations;
 
   virtual void resolve(SymbolTable* symtab);
-  virtual void calculate_types();
   virtual void check_types();
 };
 
@@ -657,11 +672,7 @@ public:
     m_false->resolve(symtab);
   }
 
-  virtual void calculate_types() {
-    m_expr->calculate_types();
-    m_true->calculate_types();
-    m_false->calculate_types();
-  }
+  virtual void check_types();
 };
 
 class WhileStmt : public Stmt
@@ -679,10 +690,7 @@ public:
     m_stmts->resolve(symtab);
   }
 
-  virtual void calculate_types() {
-    m_expr->calculate_types();
-    m_stmts->calculate_types();
-  }
+  virtual void check_types();
 };
 
 /* Represents a function call as a statement, i.e. it wraps a function call expression */
