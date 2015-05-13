@@ -74,14 +74,6 @@ void Block::resolve(SymbolTable* symtab)
   symtab->leaveScope();
 }
 
-void Block::calculate_types()
-{
-  for (list<Stmt*>::iterator it=m_stmts.begin(); it!=m_stmts.end(); it++) {
-    Stmt* stmt = *it;
-    stmt->calculate_types();
-  }
-}
-
 void Block::check_types()
 {
   for (list<Stmt*>::iterator it=m_stmts.begin(); it!=m_stmts.end(); it++) {
@@ -112,19 +104,21 @@ void FunctionCall::resolve(SymbolTable* symtab)
   }
 }
 
-void FunctionCall::calculate_types()
+void FunctionCall::check_types()
 {
   m_type = m_definition->m_type;
   for (list<Expr*>::iterator it=m_args->begin(); it!=m_args->end(); it++) {
     Expr* expr = *it;
-    expr->calculate_types();
+    expr->check_types();
   }
 
   if (m_args->size()==m_definition->m_params->size()) {
     list<ParamDeclaration*>::iterator it_p = m_definition->m_params->begin();
     list<Expr*>::iterator it_a = m_args->begin();
     while (it_a!=m_args->end()) {
-      kkk
+      if (!(*it_a)->is_compatible(*it_p)) {
+        errmsg("Incompatible types in function call");
+      }
       it_p++;
       it_a++;
     }

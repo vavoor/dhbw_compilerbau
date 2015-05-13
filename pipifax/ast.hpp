@@ -699,8 +699,8 @@ public:
     m_function->resolve(symtab);
   }
 
-  virtual void calculate_types() {
-    m_function->calculate_types();
+  virtual void check_types() {
+    m_function->check_types();
   }
 };
 
