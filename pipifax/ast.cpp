@@ -11,6 +11,15 @@ VoidType VoidType::s_instance;
 ErrorType ErrorType::s_instance;
 
 
+ArrayType::ArrayType(int line, Type* base, int dimension)
+: m_base(base), m_dim(dimension)
+{
+  m_location = line;
+  if (m_dim<=0) {
+    errmsg(m_location,"Array dimension must be greater than 0");
+  }
+}
+
 void Program::resolve()
 {
   SymbolTable symtab;
@@ -43,6 +52,40 @@ void Program::check_types()
   }
 }
 
+void Program::prepare()
+{
+  GenerationContext context;
+
+  context.reset_offset();
+  for (list<GlobalVarDeclaration*>::iterator var_it = m_variables.begin(); var_it!=m_variables.end(); var_it++) {
+    GlobalVarDeclaration* var = *var_it;
+    var->prepare(&context);
+  }
+
+  context.reset_offset();
+  for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
+    FuncDefinition* func = *func_it;
+    func->prepare(&context);
+  }
+}
+
+void Program::generate(ostream& os)
+{
+  GenerationContext context;
+
+  os << ".CODE" <<endl;
+  for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
+    FuncDefinition* func = *func_it;
+    func->generate(&context,os);
+  }
+
+  os << ".DATA" << endl;
+  for (list<GlobalVarDeclaration*>::iterator var_it = m_variables.begin(); var_it!=m_variables.end(); var_it++) {
+    GlobalVarDeclaration* var = *var_it;
+    var->generate(&context,os);
+  }
+}
+
 void FuncDefinition::resolve(SymbolTable* symtab)
 {
   symtab->enterScope();
@@ -57,6 +100,38 @@ void FuncDefinition::resolve(SymbolTable* symtab)
   m_stmts->resolve(symtab);
 
   symtab->leaveScope();
+}
+
+void FuncDefinition::prepare(GenerationContext* ct)
+{
+  int offset = 0;
+  for (list<ParamDeclaration*>::reverse_iterator rit=m_params->rbegin(); rit!=m_params->rend(); ++rit) {
+    ParamDeclaration* p = *rit;
+    p->m_offset = offset+8;
+    offset += p->m_type->size();
+  }
+  m_return_value->m_offset = offset+8;
+  offset += m_return_value->m_type->size();
+  m_arg_size = offset;
+
+  ct->reset_offset();
+  m_stmts->prepare(ct);
+}
+
+void FuncDefinition::generate(GenerationContext* ct, ostream& os)
+{
+}
+
+void GlobalVarDeclaration::prepare(GenerationContext* ct)
+{
+  m_offset = ct->offset();
+  ct->increase(m_type->size());
+}
+
+
+void GlobalVarDeclaration::generate(GenerationContext* ct, ostream& os)
+{
+  os << *m_name << ": DS(" << m_type->size() <<")" << endl;
 }
 
 void Block::resolve(SymbolTable* symtab)
@@ -82,6 +157,21 @@ void Block::check_types()
     Stmt* stmt = *it;
     stmt->check_types();
   }
+}
+
+void Block::prepare(GenerationContext* ct)
+{
+  int offset = ct->offset();
+  for (list<LocalVarDeclaration*>::iterator it=m_declarations.begin(); it!=m_declarations.end(); ++it) {
+    LocalVarDeclaration* v = *it;
+    ct->increase(v->m_type->size());
+    v->m_offset = -ct->offset();
+  }
+  m_var_size = ct->offset()-offset;
+  for (list<Stmt*>::iterator it=m_stmts.begin(); it!=m_stmts.end(); ++it) {
+    (*it)->prepare(ct);
+  }
+  ct->reset_offset(offset);
 }
 
 void AssignmentStmt::check_types()

@@ -3,6 +3,7 @@
 
 #include <boost/lexical_cast.hpp>
 
+#include <iostream>
 #include <string>
 #include <list>
 #include <map>
@@ -21,6 +22,42 @@ class ReferenceType;
 class DimensionlessArrayType;
 class ErrorType;
 
+class GenerationContext {
+public:
+  GenerationContext()
+  : m_offset(0), m_id(0)
+  {}
+
+  int offset() {
+    return m_offset;
+  }
+
+  void increase(int n) {
+    m_offset += n;
+  }
+
+  void reset_offset() {
+    m_offset = 0;
+  }
+
+  void reset_offset(int n) {
+    m_offset = n;
+  }
+
+  int id() {
+    return ++m_id;
+  }
+
+  string* label() {
+    string s = string("lbl_")+boost::lexical_cast<string>(id());
+    return new string(s);
+  }
+
+private:
+  int m_offset;
+  int m_id;
+};
+
 /* Superclass for all nodes in the AST */
 class Node
 {
@@ -35,6 +72,9 @@ public:
 
   virtual void resolve(SymbolTable* symtab) {}
   virtual void check_types() {}
+  virtual void prepare(GenerationContext* ct) {}
+  virtual void generate(GenerationContext* ct, ostream& os) {}
+
   virtual string dump() { return string("Node"); }
 
   int m_location;
@@ -67,6 +107,8 @@ public:
   virtual bool is_compatible_with(DimensionlessArrayType* t) { return false; }
   virtual bool is_compatible_with(ReferenceType* t) { return false; }
   virtual bool is_compatible_with(ErrorType* t) { return false; }
+
+  virtual int size() = 0;
 };
 
 
@@ -88,6 +130,10 @@ public:
 
   virtual bool is_compatible_with(IntType* t) {
     return true;
+  }
+
+  virtual int size() {
+    return 4;
   }
 
 private:
@@ -113,6 +159,10 @@ public:
 
   virtual bool is_compatible_with(FloatType* t) {
     return true;
+  }
+
+  virtual int size() {
+    return 8;
   }
 
 private:
@@ -141,6 +191,10 @@ public:
     return true;
   }
 
+  virtual int size() {
+    return 8; /* Handle consisting of length + pointer to content */
+  }
+
 private:
   static StringType s_instance;
   StringType() {}
@@ -162,6 +216,10 @@ public:
     return t->is_compatible_with(this);
   }
 
+  virtual int size() {
+    return 0;
+  }
+
 private:
   static VoidType s_instance;
   VoidType() {}
@@ -175,9 +233,7 @@ public:
   Type* m_base;
   int m_dim;
 
-  ArrayType(Type* base, int dimension)
-  : m_base(base), m_dim(dimension)
-  {}
+  ArrayType(int line, Type* base, int dimension);
 
   virtual string dump() {
     string s = boost::lexical_cast<string>(m_dim);
@@ -198,6 +254,10 @@ public:
 
   virtual bool is_compatible_with(ArrayType* t) {
     return m_dim==t->m_dim && t->m_base->is_compatible(m_base);
+  }
+
+  virtual int size() {
+    return m_dim*m_base->size();
   }
 };
 
@@ -234,6 +294,10 @@ public:
 
   virtual bool is_compatible_with(ArrayType* t) {
     return t->m_base->is_compatible(m_base);
+  }
+
+  virtual int size() {
+    return 0; /* Placeholder since there are only references to dimensionless arrays */
   }
 };
 
@@ -280,6 +344,10 @@ public:
   virtual bool is_compatible_with(DimensionlessArrayType* t) {
     return t->is_compatible(m_base);
   }
+
+  virtual int size() {
+    return 4;
+  }
 };
 
 /* This type marks a failed type check and avoids subsequent error messages */
@@ -298,6 +366,10 @@ public:
 
   virtual bool is_compatible_with(Type* t) {
     return true;
+  }
+
+  virtual int size() {
+    return 0;
   }
 
 private:
@@ -322,9 +394,14 @@ public:
 class GlobalVarDeclaration : public VarDeclaration
 {
 public:
+  int m_offset;
+
   GlobalVarDeclaration(int line, string* name, Type* type)
   : VarDeclaration(line,name,type)
   {}
+
+  virtual void prepare(GenerationContext* ct);
+  virtual void generate(GenerationContext* ct, ostream& os);
 };
 
 /* Represents a parameter in a function definition */
@@ -334,6 +411,8 @@ public:
   ParamDeclaration(int line, string*name, Type* type)
   : VarDeclaration(line,name,type)
   {}
+
+  int m_offset;
 };
 
 /* Represents a declaration of a local variable in a code block */
@@ -343,6 +422,8 @@ public:
   LocalVarDeclaration(int line, string* name, Type* type)
   : VarDeclaration(line,name,type)
   {}
+
+  int m_offset;
 };
 
 /* Superclass of all Expressions */
@@ -402,6 +483,11 @@ public:
   }
 
   virtual void check_types();
+
+  virtual void prepare(GenerationContext* ct) {
+    m_base->prepare(ct);
+    m_index->prepare(ct);
+  }
 };
 
 /* Superclass of all Expressions with two children */
@@ -426,6 +512,11 @@ public:
     m_right->check_types();
     m_type = ErrorType::instance();
   }
+
+  virtual void prepare(GenerationContext* ct) {
+    m_left->prepare(ct);
+    m_right->prepare(ct);
+  }
 };
 
 /* Superclass of all expressions with one child */
@@ -445,6 +536,10 @@ public:
   virtual void check_types() {
     m_child->check_types();
     m_type = ErrorType::instance();
+  }
+
+  virtual void prepare(GenerationContext* ct) {
+    m_child->prepare(ct);
   }
 };
 
@@ -619,6 +714,7 @@ class StringLiteral : public Expr
 {
 public:
   string* m_value;
+  string* m_label;
 
   StringLiteral(int line, char *val)
   : Expr(line)
@@ -628,6 +724,10 @@ public:
 
   virtual void check_types() {
     m_type = StringType::instance();
+  }
+
+  virtual void prepare(GenerationContext* ct) {
+    m_label = ct->label();
   }
 };
 
@@ -719,9 +819,11 @@ class Block : public Node
 public:
   list<Stmt*> m_stmts;
   list<LocalVarDeclaration*> m_declarations;
+  int m_var_size;
 
   virtual void resolve(SymbolTable* symtab);
   virtual void check_types();
+  virtual void prepare(GenerationContext* ct);
 };
 
 /* Represents a function definition like func f(a int) float {...} */
@@ -733,6 +835,7 @@ public:
   Type* m_type;
   ParamDeclaration* m_return_value;
   Block* m_stmts;
+  int m_arg_size;
 
   FuncDefinition(int line, string* name, list<ParamDeclaration*>* params, Type* type, Block* block)
   : Node(line), m_name(name), m_params(params), m_type(type), m_stmts(block)
@@ -745,6 +848,9 @@ public:
   virtual void check_types() {
     m_stmts->check_types();
   }
+
+  virtual void prepare(GenerationContext* ct);
+  virtual void generate(GenerationContext* ct, ostream& os);
 };
 
 /* Represents an assignment with an lvalue and an expression */
@@ -784,6 +890,11 @@ public:
   }
 
   virtual void check_types();
+
+  virtual void prepare(GenerationContext* ct) {
+    m_true->prepare(ct);
+    m_false->prepare(ct);
+  }
 };
 
 class WhileStmt : public Stmt
@@ -802,6 +913,10 @@ public:
   }
 
   virtual void check_types();
+
+  virtual void prepare(GenerationContext* ct) {
+    m_stmts->prepare(ct);
+  }
 };
 
 /* Represents a function call as a statement, i.e. it wraps a function call expression */
@@ -832,6 +947,8 @@ public:
 
   void resolve();
   void check_types();
+  void prepare();
+  void generate(ostream& os);
 };
 
 extern Program* the_program;

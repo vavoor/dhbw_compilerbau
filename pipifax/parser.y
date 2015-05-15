@@ -286,7 +286,7 @@ type_specifier
   | T_STRING
     { $$ = StringType::instance(); }
   | '[' T_INT_VALUE ']' type_specifier
-    { $$ = new ArrayType($4,$2); }
+    { $$ = new ArrayType(yylineno,$4,$2); }
   ;
 
 ident

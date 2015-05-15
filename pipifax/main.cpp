@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <string>
+#include <iostream>
 using namespace std;
 
 #include "parser_inc.hpp"
@@ -27,8 +28,21 @@ int main(int argc, const char* argv[])
       the_program->check_types();
       errors = get_error_count();
     }
+    if (errors==0) {
+      the_program->prepare();
+      errors = get_error_count();
+    }
+    if (errors==0) {
+      the_program->generate(cout);
+      errors = get_error_count();
+    }
 
-    fprintf(stdout,"Done\n");
+    if (errors==0) {
+      fprintf(stdout,"Done\n");
+    }
+    else {
+      fprintf(stdout,"FAILED with %d errors\n",errors);
+    }
   }
   return 0;
 }
