@@ -1,4 +1,5 @@
 #include "symtab.hpp"
+#include "ast.hpp"
 
 SymbolTable::SymbolTable()
 {
@@ -17,8 +18,9 @@ VarDeclaration* SymbolTable::lookupVariable(string* name)
   return NULL;
 }
 
-bool SymbolTable::insertVariable(string* name, VarDeclaration* node)
+bool SymbolTable::insertVariable(VarDeclaration* node)
 {
+  string* name = node->m_name;
   Scope* scope = m_variables.front();
   Scope::iterator it = scope->find(*name);
   if (it==scope->end()) {
@@ -54,8 +56,9 @@ FuncDefinition* SymbolTable::lookupFunction(string* name)
   }
 }
 
-bool SymbolTable::insertFunction(string* name, FuncDefinition* func)
+bool SymbolTable::insertFunction(FuncDefinition* func)
 {
+  string* name = func->m_name;
   map<string,FuncDefinition*>::iterator it = m_functions.find(*name);
   if (it==m_functions.end()) {
     m_functions[*name] = func;

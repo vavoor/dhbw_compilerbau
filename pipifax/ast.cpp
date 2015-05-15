@@ -4,10 +4,10 @@
 
 Program* the_program;
 
-IntType* IntType::m_instance = NULL;
-FloatType* FloatType::m_instance = NULL;
-StringType* StringType::m_instance = NULL;
-VoidType* VoidType::m_instance = NULL;
+IntType IntType::s_instance;
+FloatType FloatType::s_instance;
+StringType StringType::s_instance;
+VoidType VoidType::s_instance;
 
 void Program::resolve()
 {
@@ -15,14 +15,14 @@ void Program::resolve()
 
   for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
     FuncDefinition* func = *func_it;
-    if (!symtab.insertFunction(func->m_name,func)) {
+    if (!symtab.insertFunction(func)) {
       errmsg("Duplicate function %s",func->m_name->c_str());
     }
   }
 
   for (list<GlobalVarDeclaration*>::iterator var_it = m_variables.begin(); var_it!=m_variables.end(); var_it++) {
     GlobalVarDeclaration* var = *var_it;
-    if (!symtab.insertVariable(var->m_name,var)) {
+    if (!symtab.insertVariable(var)) {
       errmsg("Duplicate global variable %s",var->m_name->c_str());
     }
   }
@@ -45,11 +45,11 @@ void FuncDefinition::resolve(SymbolTable* symtab)
 {
   symtab->enterScope();
 
-  symtab->insertVariable(m_return_value->m_name,m_return_value);
+  symtab->insertVariable(m_return_value);
 
   for (list<ParamDeclaration*>::iterator it=m_params->begin(); it!=m_params->end(); it++) {
     ParamDeclaration* param = *it;
-    symtab->insertVariable(param->m_name,param);
+    symtab->insertVariable(param);
   }
 
   m_stmts->resolve(symtab);
@@ -63,7 +63,7 @@ void Block::resolve(SymbolTable* symtab)
 
   for (list<LocalVarDeclaration*>::iterator it=m_declarations.begin(); it!=m_declarations.end(); it++) {
     LocalVarDeclaration* decl = *it;
-    symtab->insertVariable(decl->m_name,decl);
+    symtab->insertVariable(decl);
   }
 
   for (list<Stmt*>::iterator it=m_stmts.begin(); it!=m_stmts.end(); it++) {

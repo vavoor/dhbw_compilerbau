@@ -21,13 +21,13 @@ public:
   VarDeclaration* lookupVariable(string* name);
 
   /* Returns true if the element has been inserted */
-  bool insertVariable(string* name, VarDeclaration* var);
+  bool insertVariable(VarDeclaration* var);
 
   void enterScope();
   void leaveScope();
 
   FuncDefinition* lookupFunction(string* name);
-  bool insertFunction(string* name, FuncDefinition* func);
+  bool insertFunction(FuncDefinition* func);
 };
 
 #endif

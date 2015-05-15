@@ -36,6 +36,8 @@ public:
     return this;
   }
 
+  /* a op b : b->is_compatible(a) */
+  /* a = b  : b->is_compatible(a) */
   virtual bool is_compatible(Type* t) = 0;
 
   virtual bool is_compatible_with(IntType* t) { return false; }
@@ -48,15 +50,12 @@ public:
 };
 
 
-/* There is one object (getInstance) that represents the int type */
+/* There is one object (instance) that represents the int type */
 class IntType : public Type
 {
 public:
-  static IntType* getInstance() {
-    if (m_instance==NULL) {
-      m_instance = new IntType;
-    }
-    return m_instance;
+  static IntType* instance() {
+    return &s_instance;
   }
 
   virtual bool is_compatible(Type* t) {
@@ -69,7 +68,7 @@ protected:
   }
 
 private:
-  static IntType* m_instance;
+  static IntType s_instance;
   IntType() {}
 };
 
@@ -77,11 +76,8 @@ private:
 class FloatType : public Type
 {
 public:
-  static FloatType* getInstance() {
-    if (m_instance==NULL) {
-      m_instance = new FloatType;
-    }
-    return m_instance;
+  static FloatType* instance() {
+    return &s_instance;
   }
 
   virtual bool is_compatible(Type* t) {
@@ -94,7 +90,7 @@ protected:
   }
 
 private:
-  static FloatType* m_instance;
+  static FloatType s_instance;
   FloatType() {}
 };
 
@@ -102,11 +98,8 @@ private:
 class StringType : public Type
 {
 public:
-  static StringType* getInstance() {
-    if (m_instance==NULL) {
-      m_instance = new StringType;
-    }
-    return m_instance;
+  static StringType* instance() {
+    return &s_instance;
   }
 
   virtual bool is_compatible(Type* t) {
@@ -119,7 +112,7 @@ protected:
   }
 
 private:
-  static StringType* m_instance;
+  static StringType s_instance;
   StringType() {}
 };
 
@@ -127,11 +120,8 @@ private:
 class VoidType : public Type
 {
 public:
-  static VoidType* getInstance() {
-    if (m_instance==NULL) {
-      m_instance = new VoidType;
-    }
-    return m_instance;
+  static VoidType* instance() {
+    return &s_instance;
   }
 
   virtual bool is_compatible(Type* t) {
@@ -139,7 +129,7 @@ public:
   }
 
 private:
-  static VoidType* m_instance;
+  static VoidType s_instance;
   VoidType() {}
 };
 
@@ -475,7 +465,7 @@ public:
   {}
 
   virtual void calculate_types() {
-    m_type = IntType::getInstance();
+    m_type = IntType::instance();
   }
 };
 
@@ -498,7 +488,7 @@ public:
 
   virtual void check_types() {
     UnaryExpr::check_types();
-    m_type = IntType::getInstance();
+    m_type = IntType::instance();
   }
 };
 
@@ -511,7 +501,7 @@ public:
 
   virtual void check_types() {
     UnaryExpr::check_types();
-    m_type = FloatType::getInstance();
+    m_type = FloatType::instance();
   }
 };
 
@@ -526,7 +516,7 @@ public:
   }
 
   virtual void check_types() {
-    m_type = StringType::getInstance();
+    m_type = StringType::instance();
   }
 };
 
@@ -541,7 +531,7 @@ public:
   {}
 
   virtual void check_types() {
-    m_type = IntType::getInstance();
+    m_type = IntType::instance();
   }
 };
 
@@ -556,7 +546,7 @@ public:
   {}
 
   virtual void calculate_types() {
-    m_type = FloatType::getInstance();
+    m_type = FloatType::instance();
   }
 };
 

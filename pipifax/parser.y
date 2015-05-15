@@ -118,7 +118,7 @@ param_type_specifier
 opt_type_specifier
   : type_specifier
   | /* empty */
-    { $$ = VoidType::getInstance(); }
+    { $$ = VoidType::instance(); }
   ;
 
 block
@@ -280,11 +280,11 @@ literal
 
 type_specifier
   : T_INT
-    { $$ = IntType::getInstance(); }
+    { $$ = IntType::instance(); }
   | T_FLOAT
-    { $$ = FloatType::getInstance(); }
+    { $$ = FloatType::instance(); }
   | T_STRING
-    { $$ = StringType::getInstance(); }
+    { $$ = StringType::instance(); }
   | '[' T_INT_VALUE ']' type_specifier
     { $$ = new ArrayType($4,$2); }
   ;
