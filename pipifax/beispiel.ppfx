@@ -12,7 +12,7 @@ func main() {
   var m float
   var d[3] float
 
-  d[0] = 5   d[1] = 3.14   d[2] = -1  # Bad style!
+  d[0] = float(5)   d[1] = 3.14   d[2] = float(-1)  # Bad style!
   msg = "Alles klar!"
   m = max(3,d,error)
   if error {

@@ -20,7 +20,7 @@ void yyerror(const char* msg);
   char* s;
   int i;
   double d;
-  string* str;
+  struct StringR str;
   Program* program;
   FuncDefinition* func_def;
   GlobalVarDeclaration* global_var_decl;
@@ -81,12 +81,12 @@ elements
 
 global_var_decl
   : T_VAR ident type_specifier
-    { $$ = new GlobalVarDeclaration($2,$3); }
+    { $$ = new GlobalVarDeclaration($2.location,$2.str,$3); }
   ;
 
 func_def
   : T_FUNC ident '(' opt_param_list ')' opt_type_specifier block
-    { $$ = new FuncDefinition($2,(list<ParamDeclaration*>*)$4,$6,$7); }
+    { $$ = new FuncDefinition($2.location,$2.str,(list<ParamDeclaration*>*)$4,$6,$7); }
   ;
 
 opt_param_list
@@ -104,7 +104,7 @@ param_list
 
 param_decl
   : ident param_type_specifier
-    { $$ = new ParamDeclaration($1,$2); }
+    { $$ = new ParamDeclaration($1.location,$1.str,$2); }
   ;
 
 param_type_specifier
@@ -137,7 +137,7 @@ var_or_stmt_list
 
 local_var_decl
   : T_VAR ident type_specifier
-    { $$ = new LocalVarDeclaration($2,$3); }
+    { $$ = new LocalVarDeclaration($2.location,$2.str,$3); }
   ;
 
 statement
@@ -246,7 +246,7 @@ unary_expr
 
 func_call
   : ident '(' opt_arg_list ')' /* TODO : what about f()[5], i.e. is a function call an lvalue ?*/
-    { $$ = new FunctionCall($1,$3); }
+    { $$ = new FunctionCall($1.location,$1.str,$3); }
   ;
 
 conversion
@@ -265,17 +265,17 @@ lvalue
   : lvalue '[' expr ']'
     { $$ = new ArrayAccess($1,$3); }
   | ident
-    { $$ = new VarAccess($1); }
+    { $$ = new VarAccess($1.location,$1.str); /* TODO : location? */}
   /* TODO : f()[7] = 4? */
   ;
 
 literal
   : T_INT_VALUE
-    { $$ = new IntLiteral($1); }
+    { $$ = new IntLiteral(yylineno,$1); }
   | T_FLOAT_VALUE
-    { $$ = new FloatLiteral($1); }
+    { $$ = new FloatLiteral(yylineno,$1); }
   | T_STRING_VALUE
-    { $$ = new StringLiteral($1); free($1); }
+    { $$ = new StringLiteral(yylineno,$1); free($1); }
   ;
 
 type_specifier
@@ -291,7 +291,7 @@ type_specifier
 
 ident
   : T_IDENT
-    { $$ = new string($1); free($1); }
+    { $$.str = new string($1); $$.location = yylineno; free($1); }
   ;
 
 %%

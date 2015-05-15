@@ -1,6 +1,8 @@
 #ifndef HA15F17E1_3F8B_41A3_BB6A_C8757DD7985D
 #define HA15F17E1_3F8B_41A3_BB6A_C8757DD7985D
 
+#include <boost/lexical_cast.hpp>
+
 #include <string>
 #include <list>
 #include <map>
@@ -17,13 +19,25 @@ class VoidType;
 class ArrayType;
 class ReferenceType;
 class DimensionlessArrayType;
+class ErrorType;
 
 /* Superclass for all nodes in the AST */
 class Node
 {
 public:
+  Node(int line)
+  : m_location(line)
+  {}
+
+  Node()
+  : m_location(0)
+  {}
+
   virtual void resolve(SymbolTable* symtab) {}
   virtual void check_types() {}
+  virtual string dump() { return string("Node"); }
+
+  int m_location;
 };
 
 /* Superclass of all nodes representing types */
@@ -36,10 +50,23 @@ public:
     return this;
   }
 
+  virtual bool is_indexed() {
+    return false;
+  }
+
+  virtual Type* element_type();
+
   /* a op b : b->is_compatible(a) */
   /* a = b  : b->is_compatible(a) */
   virtual bool is_compatible(Type* t) = 0;
-  virtual bool is_compatible_with(Type* t) { return false; }
+  virtual bool is_compatible_with(IntType* t) { return false; }
+  virtual bool is_compatible_with(FloatType* t) { return false; }
+  virtual bool is_compatible_with(StringType* t) { return false; }
+  virtual bool is_compatible_with(VoidType* t) { return false; }
+  virtual bool is_compatible_with(ArrayType* t) { return false; }
+  virtual bool is_compatible_with(DimensionlessArrayType* t) { return false; }
+  virtual bool is_compatible_with(ReferenceType* t) { return false; }
+  virtual bool is_compatible_with(ErrorType* t) { return false; }
 };
 
 
@@ -51,11 +78,14 @@ public:
     return &s_instance;
   }
 
+  virtual string dump() {
+    return string("IntType");
+  }
+
   virtual bool is_compatible(Type* t) {
     return t->is_compatible_with(this);
   }
 
-protected:
   virtual bool is_compatible_with(IntType* t) {
     return true;
   }
@@ -73,11 +103,14 @@ public:
     return &s_instance;
   }
 
+  virtual string dump() {
+    return string("FloatType");
+  }
+
   virtual bool is_compatible(Type* t) {
     return t->is_compatible_with(this);
   }
 
-protected:
   virtual bool is_compatible_with(FloatType* t) {
     return true;
   }
@@ -95,11 +128,15 @@ public:
     return &s_instance;
   }
 
+  virtual string dump() {
+    return string("StringType");
+  }
+
+
   virtual bool is_compatible(Type* t) {
     return t->is_compatible_with(this);
   }
 
-protected:
   virtual bool is_compatible_with(StringType* t) {
     return true;
   }
@@ -115,6 +152,10 @@ class VoidType : public Type
 public:
   static VoidType* instance() {
     return &s_instance;
+  }
+
+  virtual string dump() {
+    return string("VoidType");
   }
 
   virtual bool is_compatible(Type* t) {
@@ -138,7 +179,16 @@ public:
   : m_base(base), m_dim(dimension)
   {}
 
-  virtual Type* value_type() {
+  virtual string dump() {
+    string s = boost::lexical_cast<string>(m_dim);
+    return string("[")+s+string("]") + m_base->dump();
+  }
+
+  virtual bool is_indexed() {
+    return true;
+  }
+
+  virtual Type* element_type() {
     return m_base;
   }
 
@@ -146,7 +196,6 @@ public:
     return t->is_compatible_with(this);
   }
 
-protected:
   virtual bool is_compatible_with(ArrayType* t) {
     return m_dim==t->m_dim && t->m_base->is_compatible(m_base);
   }
@@ -163,7 +212,15 @@ public:
   : m_base(base)
   {}
 
-  virtual Type* value_type() {
+  virtual string dump() {
+    return string("[]")+m_base->dump();
+  }
+
+  virtual bool is_indexed() {
+    return true;
+  }
+
+  virtual Type* element_type() {
     return m_base;
   }
 
@@ -171,12 +228,12 @@ public:
     return t->is_compatible_with(this);
   }
 
-protected:
   virtual bool is_compatible_with(DimensionlessArrayType* t) {
-    return t->m_base->is_compatible_with(m_base);
+    return t->m_base->is_compatible(m_base);
   }
+
   virtual bool is_compatible_with(ArrayType* t) {
-    return t->m_base->is_compatible_with(m_base);
+    return t->m_base->is_compatible(m_base);
   }
 };
 
@@ -191,16 +248,61 @@ public:
   : m_base(base)
   {}
 
+  virtual string dump() {
+    return string("*")+m_base->dump();
+  }
+
   virtual Type* value_type() {
     return m_base;
   }
 
-  virtual bool is_compatible(Type* t) { return is_compatible_with(this); }
-  
-protected:
-  virtual bool is_compatible_with(Type* t) {
-    return t->is_compatible(m_base); 
+  virtual bool is_compatible(Type* t) {
+    /* TODO : references to constants must not exist! */
+    return t->is_compatible_with(this);
   }
+
+  virtual bool is_compatible_with(IntType* t) {
+    return t->is_compatible(m_base);
+  }
+
+  virtual bool is_compatible_with(FloatType* t) {
+    return t->is_compatible(m_base);
+  }
+
+  virtual bool is_compatible_with(StringType* t) {
+    return t->is_compatible(m_base);
+  }
+
+  virtual bool is_compatible_with(ArrayType* t) {
+    return t->is_compatible(m_base);
+  }
+
+  virtual bool is_compatible_with(DimensionlessArrayType* t) {
+    return t->is_compatible(m_base);
+  }
+};
+
+/* This type marks a failed type check and avoids subsequent error messages */
+class ErrorType : public Type
+{
+public:
+  static ErrorType* instance() { return &s_instance; }
+
+  virtual string dump() {
+    return string("ErrorType");
+  }
+
+  virtual bool is_compatible(Type* t) {
+    return t->is_compatible_with(this);
+  }
+
+  virtual bool is_compatible_with(Type* t) {
+    return true;
+  }
+
+private:
+  static ErrorType s_instance;
+  ErrorType() {}
 };
 
 /* Superclass representing all kinds of variable declaration */
@@ -210,8 +312,8 @@ public:
   string* m_name;
   Type* m_type;
 
-  VarDeclaration(string* name, Type* type)
-  : m_name(name), m_type(type)
+  VarDeclaration(int line, string* name, Type* type)
+  : Node(line), m_name(name), m_type(type)
   {}
 
 };
@@ -220,8 +322,8 @@ public:
 class GlobalVarDeclaration : public VarDeclaration
 {
 public:
-  GlobalVarDeclaration(string* name, Type* type)
-  : VarDeclaration(name,type)
+  GlobalVarDeclaration(int line, string* name, Type* type)
+  : VarDeclaration(line,name,type)
   {}
 };
 
@@ -229,8 +331,8 @@ public:
 class ParamDeclaration : public VarDeclaration
 {
 public:
-  ParamDeclaration(string*name, Type* type)
-  : VarDeclaration(name,type)
+  ParamDeclaration(int line, string*name, Type* type)
+  : VarDeclaration(line,name,type)
   {}
 };
 
@@ -238,8 +340,8 @@ public:
 class LocalVarDeclaration : public VarDeclaration
 {
 public:
-  LocalVarDeclaration(string* name, Type* type)
-  : VarDeclaration(name,type)
+  LocalVarDeclaration(int line, string* name, Type* type)
+  : VarDeclaration(line,name,type)
   {}
 };
 
@@ -247,6 +349,10 @@ public:
 class Expr : public Node
 {
 public:
+  Expr(int line)
+  : Node(line)
+  {}
+
   Type* m_type;
 };
 
@@ -255,6 +361,10 @@ public:
 class LValue : public Node
 {
 public:
+  LValue(int line)
+  : Node(line)
+  {}
+
   Type* m_type;
 };
 
@@ -265,8 +375,8 @@ public:
   string* m_name;
   VarDeclaration* m_decl;
 
-  VarAccess(string* name)
-  : m_name(name), m_decl(NULL)
+  VarAccess(int line, string* name)
+  : LValue(line), m_name(name), m_decl(NULL)
   {}
 
   virtual void resolve(SymbolTable* symtab);
@@ -283,7 +393,7 @@ public:
   Expr* m_index;
 
   ArrayAccess(LValue *base, Expr *expr)
-  : m_base(base), m_index(expr)
+  : LValue(base->m_location), m_base(base), m_index(expr)
   {}
 
   virtual void resolve(SymbolTable* symtab) {
@@ -291,10 +401,7 @@ public:
     m_index->resolve(symtab);
   }
 
-  virtual void check_types() {
-    m_base->check_types();
-    m_type = m_base->m_type->value_type();
-  }
+  virtual void check_types();
 };
 
 /* Superclass of all Expressions with two children */
@@ -305,7 +412,7 @@ public:
   Expr* m_right;
 
   BinaryExpr(Expr* l, Expr* r)
-  : m_left(l), m_right(r)
+  : Expr(l->m_location), m_left(l), m_right(r)
   {}
 
   virtual void resolve(SymbolTable* symtab) {
@@ -314,10 +421,10 @@ public:
   }
 
   /* Valid for most subtypes ... */
-  virtual void calculate_types() {
+  virtual void check_types() {
     m_left->check_types();
     m_right->check_types();
-    /* TODO : set m_type! */
+    m_type = ErrorType::instance();
   }
 };
 
@@ -328,32 +435,42 @@ public:
   Expr* m_child;
 
   UnaryExpr(Expr* child)
-  : m_child(child)
+  : Expr(child->m_location), m_child(child)
   {}
 
   virtual void resolve(SymbolTable* symtab) {
     m_child->resolve(symtab);
   }
-  
+
   virtual void check_types() {
     m_child->check_types();
-    /* TODO : set m_type! */
+    m_type = ErrorType::instance();
   }
 };
 
-class AndExpr : public BinaryExpr
+class LogicalExpr : public BinaryExpr
+{
+public:
+  LogicalExpr(Expr* l, Expr* r)
+  : BinaryExpr(l,r)
+  {}
+
+  virtual void check_type();
+};
+
+class AndExpr : public LogicalExpr
 {
 public:
   AndExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : LogicalExpr(l,r)
   {}
 };
 
-class OrExpr : public BinaryExpr
+class OrExpr : public LogicalExpr
 {
 public:
   OrExpr(Expr* l, Expr* r)
-  : BinaryExpr(l,r)
+  : LogicalExpr(l,r)
   {}
 };
 
@@ -363,6 +480,8 @@ public:
   CompExpr(Expr* l, Expr* r)
   : BinaryExpr(l,r)
   {}
+
+  virtual void check_types();
 };
 
 class LessExpr : public CompExpr
@@ -420,7 +539,7 @@ public:
   : BinaryExpr(l,r)
   {}
 
-  virtual void calculate_types();
+  virtual void check_types();
 };
 
 class AddExpr : public ArithmeticExpr
@@ -462,9 +581,7 @@ public:
   : UnaryExpr(child)
   {}
 
-  virtual void calculate_types() {
-    m_type = IntType::instance();
-  }
+  virtual void check_types();
 };
 
 class NegExpr : public UnaryExpr
@@ -474,7 +591,7 @@ public:
   : UnaryExpr(child)
   {}
 
-  virtual void calculate_types();
+  virtual void check_types();
 };
 
 class IntConversion : public UnaryExpr
@@ -484,10 +601,7 @@ public:
   : UnaryExpr(expr)
   {}
 
-  virtual void check_types() {
-    UnaryExpr::check_types();
-    m_type = IntType::instance();
-  }
+  virtual void check_types();
 };
 
 class FloatConversion : public UnaryExpr
@@ -497,10 +611,7 @@ public:
   : UnaryExpr(expr)
   {}
 
-  virtual void check_types() {
-    UnaryExpr::check_types();
-    m_type = FloatType::instance();
-  }
+  virtual void check_types();
 };
 
 /* Represents a string literal, such as "Hello Wordl!" */
@@ -509,7 +620,9 @@ class StringLiteral : public Expr
 public:
   string* m_value;
 
-  StringLiteral(char *val) {
+  StringLiteral(int line, char *val)
+  : Expr(line)
+  {
     m_value = new string(val);
   }
 
@@ -524,12 +637,18 @@ class IntLiteral : public Expr
 public:
   int m_value;
 
-  IntLiteral(int val)
-  : m_value(val)
+  IntLiteral(int line, int val)
+  : Expr(line), m_value(val)
   {}
 
   virtual void check_types() {
     m_type = IntType::instance();
+  }
+
+  virtual string dump() {
+    string s = boost::lexical_cast<string>(m_value);
+
+    return string("IntLiteral(")+s+")";
   }
 };
 
@@ -539,11 +658,11 @@ class FloatLiteral : public Expr
 public:
   double m_value;
 
-  FloatLiteral(double val)
-  : m_value(val)
+  FloatLiteral(int line, double val)
+  : Expr(line), m_value(val)
   {}
 
-  virtual void calculate_types() {
+  virtual void check_types() {
     m_type = FloatType::instance();
   }
 };
@@ -556,8 +675,8 @@ public:
   list<Expr*>* m_args;
   FuncDefinition* m_definition;
 
-  FunctionCall(string*name, list<Expr*>* args)
-  : m_name(name), m_args(args), m_definition(NULL)
+  FunctionCall(int line, string*name, list<Expr*>* args)
+  : Expr(line), m_name(name), m_args(args), m_definition(NULL)
   {}
 
   virtual void resolve(SymbolTable* symtab);
@@ -572,7 +691,7 @@ public:
   LValue* m_lvalue;
 
   VariableExpr(LValue *lval)
-  : m_lvalue(lval)
+  : Expr(lval->m_location), m_lvalue(lval)
   {}
 
   virtual void resolve(SymbolTable* symtab) {
@@ -588,6 +707,10 @@ public:
 /* Superclass for all statements */
 class Stmt : public Node
 {
+public:
+  Stmt(int line)
+  : Node(line)
+  {}
 };
 
 /* Represents a sequence of variable declarations and statements in curly brackets */
@@ -611,10 +734,10 @@ public:
   ParamDeclaration* m_return_value;
   Block* m_stmts;
 
-  FuncDefinition(string* name, list<ParamDeclaration*>* params, Type* type, Block* block)
-  : m_name(name), m_params(params), m_type(type), m_stmts(block)
+  FuncDefinition(int line, string* name, list<ParamDeclaration*>* params, Type* type, Block* block)
+  : Node(line), m_name(name), m_params(params), m_type(type), m_stmts(block)
   {
-    m_return_value = new ParamDeclaration(m_name,m_type);
+    m_return_value = new ParamDeclaration(line,m_name,m_type);
   }
 
   virtual void resolve(SymbolTable* symtab);
@@ -632,7 +755,7 @@ public:
   Expr* m_expr;
 
   AssignmentStmt(LValue* l, Expr* expr)
-  : m_lvalue(l), m_expr(expr)
+  : Stmt(l->m_location), m_lvalue(l), m_expr(expr)
   {}
 
   virtual void resolve(SymbolTable* symtab) {
@@ -651,7 +774,7 @@ public:
   Block* m_false; /* block with no statements if not present  */
 
   IfStmt(Expr* expr, Block* t, Block* f)
-  : m_expr(expr), m_true(t), m_false(f)
+  : Stmt(expr->m_location), m_expr(expr), m_true(t), m_false(f)
   {}
 
   virtual void resolve(SymbolTable* symtab) {
@@ -670,7 +793,7 @@ public:
   Block* m_stmts;
 
   WhileStmt(Expr* expr, Block* stmts)
-  : m_expr(expr), m_stmts(stmts)
+  : Stmt(expr->m_location), m_expr(expr), m_stmts(stmts)
   {}
 
   virtual void resolve(SymbolTable* symtab) {
@@ -688,7 +811,7 @@ public:
   FunctionCall* m_function;
 
   FunctionCallStmt(FunctionCall* function)
-  : m_function(function)
+  : Stmt(function->m_location), m_function(function)
   {}
 
   virtual void resolve(SymbolTable* symtab) {

@@ -8,6 +8,8 @@ IntType IntType::s_instance;
 FloatType FloatType::s_instance;
 StringType StringType::s_instance;
 VoidType VoidType::s_instance;
+ErrorType ErrorType::s_instance;
+
 
 void Program::resolve()
 {
@@ -16,14 +18,14 @@ void Program::resolve()
   for (list<FuncDefinition*>::iterator func_it = m_functions.begin(); func_it!=m_functions.end(); func_it++) {
     FuncDefinition* func = *func_it;
     if (!symtab.insertFunction(func)) {
-      errmsg("Duplicate function %s",func->m_name->c_str());
+      errmsg(func->m_location,"Duplicate function %s",func->m_name->c_str());
     }
   }
 
   for (list<GlobalVarDeclaration*>::iterator var_it = m_variables.begin(); var_it!=m_variables.end(); var_it++) {
     GlobalVarDeclaration* var = *var_it;
     if (!symtab.insertVariable(var)) {
-      errmsg("Duplicate global variable %s",var->m_name->c_str());
+      errmsg(var->m_location,"Duplicate global variable %s",var->m_name->c_str());
     }
   }
 
@@ -86,6 +88,10 @@ void AssignmentStmt::check_types()
 {
   m_lvalue->check_types();
   m_expr->check_types();
+
+  if (!m_expr->m_type->is_compatible(m_lvalue->m_type)) {
+    errmsg(m_lvalue->m_location,"Type mismatch in assignment");
+  }
 }
 
 void IfStmt::check_types()
@@ -93,19 +99,26 @@ void IfStmt::check_types()
   m_expr->check_types();
   m_true->check_types();
   m_false->check_types();
+
+  if (!m_expr->m_type->is_compatible(IntType::instance())) {
+    errmsg(m_expr->m_location,"Expression of condition must be integer");
+  }
 }
 
 void WhileStmt::check_types()
 {
   m_expr->check_types();
   m_stmts->check_types();
+  if (!m_expr->m_type->is_compatible(IntType::instance())) {
+    errmsg(m_expr->m_location,"Expression in condition must be integer");
+  }
 }
 
 void FunctionCall::resolve(SymbolTable* symtab)
 {
   m_definition = symtab->lookupFunction(m_name);
   if (m_definition==NULL) {
-    errmsg("Call of undefined function %s",m_name->c_str());
+    errmsg(m_location,"Call of undefined function %s",m_name->c_str());
   }
 
   for (list<Expr*>::iterator it=m_args->begin(); it!=m_args->end(); it++) {
@@ -116,39 +129,165 @@ void FunctionCall::resolve(SymbolTable* symtab)
 
 void FunctionCall::check_types()
 {
-  m_type = m_definition->m_type;
   for (list<Expr*>::iterator it=m_args->begin(); it!=m_args->end(); it++) {
     Expr* expr = *it;
     expr->check_types();
   }
 
   if (m_args->size()==m_definition->m_params->size()) {
+    int para_no = 1;
     list<ParamDeclaration*>::iterator it_p = m_definition->m_params->begin();
     list<Expr*>::iterator it_a = m_args->begin();
     while (it_a!=m_args->end()) {
+      ParamDeclaration* p = *it_p;
+      Expr* e = *it_a;
+      if (!e->m_type->is_compatible(p->m_type)) {
+        errmsg(e->m_location,"Illegal type of parameter %d in function call",para_no);
+      }
       it_p++;
       it_a++;
+      para_no++;
     }
   }
   else {
-    errmsg("Incompatible number of arguments");
+    errmsg(m_location,"Incompatible number of arguments");
   }
+
+  m_type = m_definition->m_type;
 }
 
 void VarAccess::resolve(SymbolTable* symtab)
 {
   m_decl = symtab->lookupVariable(m_name);
   if (m_decl==NULL) {
-    errmsg("Undefined variable %s",m_name->c_str());
+    errmsg(m_location,"Undefined variable %s",m_name->c_str());
   }
 }
 
-void ArithmeticExpr::calculate_types()
+void ArrayAccess::check_types()
 {
-  /* TODO */
+    m_base->check_types();
+    m_index->check_types();
+
+    if (!m_index->m_type->is_compatible(IntType::instance())) {
+      errmsg(m_index->m_location,"Array index type must be integer");
+    }
+    else if (!m_base->m_type->is_indexed()) {
+      errmsg(m_location,"Indexed access to non-array type");
+    }
+    else {
+      m_type = m_base->m_type->element_type();
+    }
 }
 
-void NegExpr::calculate_types()
+void LogicalExpr::check_type()
 {
-  /* TODO */
+  BinaryExpr::check_types();
+  if (!m_left->m_type->is_compatible(IntType::instance())) {
+    errmsg(m_left->m_location,"Operands of logical expression must be integer");
+  }
+  else if (!m_right->m_type->is_compatible(IntType::instance())) {
+    errmsg(m_right->m_location,"Operands of logical expression must be integer");
+  }
+  else {
+    m_type = IntType::instance();
+  }
+}
+
+void CompExpr::check_types()
+{
+  BinaryExpr::check_types();
+
+  bool is_legal_type =
+    m_left->m_type->is_compatible(IntType::instance()) ||
+    m_left->m_type->is_compatible(FloatType::instance()) ||
+    m_left->m_type->is_compatible(StringType::instance()) ||
+    m_right->m_type->is_compatible(IntType::instance()) ||
+    m_right->m_type->is_compatible(FloatType::instance()) ||
+    m_right->m_type->is_compatible(StringType::instance());
+
+  if (!is_legal_type) {
+    errmsg(m_left->m_location,"Type in comparison must be int, float or string");
+  }
+  else if (!m_right->m_type->is_compatible(m_left->m_type)) {
+    errmsg(m_left->m_location,"Types in comparison don't match");
+  }
+  else {
+    m_type = IntType::instance();
+  }
+}
+
+void ArithmeticExpr::check_types()
+{
+  BinaryExpr::check_types();
+
+  bool is_legal_type =
+    m_left->m_type->is_compatible(IntType::instance()) ||
+    m_left->m_type->is_compatible(FloatType::instance()) ||
+    m_right->m_type->is_compatible(IntType::instance()) ||
+    m_right->m_type->is_compatible(FloatType::instance());
+
+  if (!is_legal_type) {
+    errmsg(m_left->m_location,"Type in arithmetic operation must be int or float");
+  }
+  else if (!m_right->m_type->is_compatible(m_left->m_type)) {
+    errmsg(m_left->m_location,"Types in arithmetic operation don't match");
+  }
+  else {
+    m_type = m_left->m_type;
+  }
+}
+
+void NotExpr::check_types()
+{
+  UnaryExpr::check_types();
+
+  if (!m_child->m_type->is_compatible(IntType::instance())) {
+    errmsg(m_child->m_location,"Operand of ! must be integer");
+  }
+  else {
+    m_type = IntType::instance();
+  }
+}
+
+void NegExpr::check_types()
+{
+  UnaryExpr::check_types();
+
+  int is_legal_type = m_child->m_type->is_compatible(IntType::instance()) || m_child->m_type->is_compatible(FloatType::instance());
+  if (!is_legal_type) {
+    errmsg(m_child->m_location,"Operand must be integer or float");
+  }
+  else {
+    m_type = m_child->m_type;
+  }
+}
+
+void IntConversion::check_types()
+{
+  UnaryExpr::check_types();
+
+  if (m_child->m_type->is_compatible(FloatType::instance())) {
+    errmsg(m_child->m_location,"Operand of int() must be float");
+  }
+  else {
+    m_type = IntType::instance();
+  }
+}
+
+void FloatConversion::check_types()
+{
+  UnaryExpr::check_types();
+
+  if (!m_child->m_type->is_compatible(IntType::instance())) {
+    errmsg(m_child->m_location,"Operand of float() must be int");
+  }
+  else {
+    m_type = FloatType::instance();
+  }
+}
+
+Type* Type::element_type()
+{
+  return VoidType::instance();
 }

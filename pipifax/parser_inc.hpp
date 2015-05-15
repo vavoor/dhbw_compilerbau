@@ -7,6 +7,11 @@
 */
 
 #include "ast.hpp"
+
+struct StringR {
+  string* str;
+  int location;
+};
 #include "parser.tab.h"
 
 #endif
