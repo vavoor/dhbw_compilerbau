@@ -39,18 +39,11 @@ public:
   /* a op b : b->is_compatible(a) */
   /* a = b  : b->is_compatible(a) */
   virtual bool is_compatible(Type* t) = 0;
-
-  virtual bool is_compatible_with(IntType* t) { return false; }
-  virtual bool is_compatible_with(FloatType* t) { return false; }
-  virtual bool is_compatible_with(StringType* t) { return false; }
-  virtual bool is_compatible_with(VoidType* t) { return false; }
-  virtual bool is_compatible_with(ArrayType* t) { return false; }
-  virtual bool is_compatible_with(DimensionlessArrayType* t) { return false; }
-  virtual bool is_compatible_with(ReferenceType* t) { return false; }
+  virtual bool is_compatible_with(Type* t) { return false; }
 };
 
 
-/* There is one object (instance) that represents the int type */
+/* There is one object instance() that represents the int type */
 class IntType : public Type
 {
 public:
@@ -72,7 +65,7 @@ private:
   IntType() {}
 };
 
-/* There is one object (getInstance) that represents the float type */
+/* There is one object instance() that represents the float type */
 class FloatType : public Type
 {
 public:
@@ -94,7 +87,7 @@ private:
   FloatType() {}
 };
 
-/* There is one object (getInstance) that represents the string type */
+/* There is one object instance() that represents the string type */
 class StringType : public Type
 {
 public:
@@ -116,7 +109,7 @@ private:
   StringType() {}
 };
 
-/* This object represents a functio with no return type. There is only one object (getInstance) */
+/* This object represents a functio with no return type. There is only one object instance() */
 class VoidType : public Type
 {
 public:
@@ -155,7 +148,7 @@ public:
 
 protected:
   virtual bool is_compatible_with(ArrayType* t) {
-    return m_dim==t->m_dim && m_base->is_compatible(t->m_base);
+    return m_dim==t->m_dim && t->m_base->is_compatible(m_base);
   }
 };
 
@@ -180,10 +173,10 @@ public:
 
 protected:
   virtual bool is_compatible_with(DimensionlessArrayType* t) {
-    /* TODO : can a dimensionless array be assigned? Think of assigning parameters in a function call! */
+    return t->m_base->is_compatible_with(m_base);
   }
   virtual bool is_compatible_with(ArrayType* t) {
-    /* TODO : can a dimensionless array be assigned? */
+    return t->m_base->is_compatible_with(m_base);
   }
 };
 
@@ -203,6 +196,11 @@ public:
   }
 
   virtual bool is_compatible(Type* t) { return is_compatible_with(this); }
+  
+protected:
+  virtual bool is_compatible_with(Type* t) {
+    return t->is_compatible(m_base); 
+  }
 };
 
 /* Superclass representing all kinds of variable declaration */
